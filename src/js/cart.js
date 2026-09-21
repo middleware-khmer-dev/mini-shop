@@ -113,14 +113,7 @@
   });
 
   document.getElementById("btnCheckout").addEventListener("click", function () {
-    var btn = this;
-    var original = btn.textContent;
-    btn.textContent = "កំពុងដំណើរការ...";
-    btn.disabled = true;
-    setTimeout(function () {
-      btn.textContent = original;
-      btn.disabled = false;
-    }, 1000);
+    location.href = "checkout.html";
   });
 
   render();
