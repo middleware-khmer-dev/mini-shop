@@ -39,6 +39,20 @@
       { id: 7, name: "នាឡិកាឆ្លាតវៃតាមដានសុខភាព", price: 45, oldPrice: 59, rating: 4.7, sold: "700", media: 2, badge: "-24%" },
       { id: 8, name: "កាបូបស្ពាយកម្សាន្តធំ", price: 21, oldPrice: null, rating: 4.6, sold: "330", media: 1, badge: null },
     ],
+
+    // Demo cart contents (static mock for the UI design, not persisted state)
+    cart: [
+      { productId: 2, qty: 1, variant: "ពណ៌ខ្មៅ" },
+      { productId: 5, qty: 2, variant: "S &middot; ស" },
+    ],
+  };
+
+  window.MiniShop.findProduct = function (id) {
+    id = Number(id);
+    for (var i = 0; i < window.MiniShop.products.length; i++) {
+      if (window.MiniShop.products[i].id === id) return window.MiniShop.products[i];
+    }
+    return null;
   };
 
   // ---- Bottom nav active state from data-page on <body> ----
@@ -92,6 +106,9 @@
       setTimeout(function () { add.style.transform = ""; }, 120);
       var badge = document.getElementById("cartBadge");
       if (badge) badge.textContent = String((parseInt(badge.textContent, 10) || 0) + 1);
+      return;
     }
+    var card = e.target.closest(".product[data-id]");
+    if (card) location.href = "product.html?id=" + card.getAttribute("data-id");
   });
 })();
