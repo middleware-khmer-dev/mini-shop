@@ -23,11 +23,11 @@ body.shell-body {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  background: var(--brand-2);
   color: #fff;
   padding: calc(16px + env(safe-area-inset-top)) 18px 18px;
   border-radius: 0 0 22px 22px;
-  box-shadow: 0 14px 26px -16px rgba(255, 77, 109, 0.55);
+  box-shadow: 0 14px 26px -16px rgba(0, 0, 0, 0.55);
 }
 
 .topbar__row {
@@ -147,8 +147,8 @@ body.shell-body {
   border-radius: var(--radius-lg);
   padding: 20px;
   color: #fff;
-  background: linear-gradient(135deg, #ff9a5a, #ff4d6d 70%);
-  box-shadow: 0 16px 28px -16px rgba(255, 77, 109, 0.55);
+  background: linear-gradient(135deg, #2b2b2b, #000 70%);
+  box-shadow: 0 16px 28px -16px rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -252,10 +252,10 @@ body.shell-body {
   transition: all 0.15s ease;
 }
 .chip.is-active {
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  background: var(--brand-2);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 8px 16px -10px rgba(255, 77, 109, 0.6);
+  box-shadow: 0 8px 16px -10px rgba(0, 0, 0, 0.6);
 }
 
 /* ---- Toolbar (catalog sort/filter/count) ---- */
@@ -308,12 +308,12 @@ body.shell-body {
   justify-content: center;
   color: #fff;
 }
-.product__media--1 { background: linear-gradient(150deg, #ffb37a, #ff7a45); }
-.product__media--2 { background: linear-gradient(150deg, #7ad0ff, #4d8dff); }
-.product__media--3 { background: linear-gradient(150deg, #ff9ad0, #ff4d8d); }
-.product__media--4 { background: linear-gradient(150deg, #9ae0b0, #34b364); }
-.product__media--5 { background: linear-gradient(150deg, #d3b3ff, #8a5cff); }
-.product__media--6 { background: linear-gradient(150deg, #ffe38a, #ffb020); }
+.product__media--1 { background: linear-gradient(150deg, #9a9a9a, #4a4a4a); }
+.product__media--2 { background: linear-gradient(150deg, #b5b5b5, #6e6e6e); }
+.product__media--3 { background: linear-gradient(150deg, #8c8c8c, #2f2f2f); }
+.product__media--4 { background: linear-gradient(150deg, #c2c2c2, #7a7a7a); }
+.product__media--5 { background: linear-gradient(150deg, #a8a8a8, #3c3c3c); }
+.product__media--6 { background: linear-gradient(150deg, #bcbcbc, #5a5a5a); }
 
 .product__badge {
   position: absolute;
@@ -368,7 +368,7 @@ body.shell-body {
   height: 28px;
   border-radius: 9px;
   border: none;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  background: var(--brand-2);
   color: #fff;
   display: flex;
   align-items: center;
@@ -454,6 +454,72 @@ body.shell-body {
   .grid { gap: 10px; }
 }
 
+/* ===== Desktop web layout =====
+   On a real desktop browser (not the Telegram client), widen the app shell
+   into a full website layout instead of a narrow phone-width column.
+   Telegram (html.in-telegram, set by shop.js when window.Telegram.WebApp
+   exists) always keeps the compact app-style shell, even on desktop. */
+@media (min-width: 900px) {
+  html:not(.in-telegram) body.shell-body {
+    background: linear-gradient(160deg, var(--shop-bg) 0%, var(--shop-bg-2) 55%, #eeeeee 100%);
+  }
+
+  html:not(.in-telegram) .shell {
+    max-width: 1180px;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  html:not(.in-telegram) .topbar {
+    border-radius: 0 0 28px 28px;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  html:not(.in-telegram) .searchbar {
+    max-width: 560px;
+  }
+
+  html:not(.in-telegram) .content {
+    padding-left: 40px;
+    padding-right: 40px;
+    padding-bottom: 48px;
+  }
+
+  html:not(.in-telegram) .grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  html:not(.in-telegram) .cat-scroll {
+    overflow-x: visible;
+    flex-wrap: wrap;
+  }
+
+  html:not(.in-telegram) .promo {
+    min-height: 160px;
+    padding: 32px 40px;
+  }
+  html:not(.in-telegram) .promo__title { font-size: 26px; max-width: 50%; }
+  html:not(.in-telegram) .promo__sub { max-width: 45%; }
+
+  /* Bottom nav becomes unnecessary chrome on desktop web; topbar/back links
+     already provide navigation, and fixed-width bars below are re-centered. */
+  html:not(.in-telegram) .bottomnav,
+  html:not(.in-telegram) .checkoutbar {
+    max-width: 1180px;
+  }
+
+  html:not(.in-telegram) .content { padding-bottom: 100px; }
+
+  html:not(.in-telegram) .success-shell {
+    max-width: 480px;
+    min-height: 100vh;
+    margin: 0 auto;
+  }
+}
+
 /* ===== Product detail page ===== */
 
 .pd-topbar {
@@ -508,7 +574,7 @@ body.shell-body {
 
 .pd-badge-row { display: flex; align-items: center; gap: 8px; }
 .pd-badge-row .product__badge { position: static; background: var(--brand-2); color: #fff; }
-.pd-cat-tag { font-size: 11px; font-weight: 700; color: var(--brand-2); background: #ffe4e9; padding: 3px 9px; border-radius: 999px; }
+.pd-cat-tag { font-size: 11px; font-weight: 700; color: var(--brand-2); background: #eeeeee; padding: 3px 9px; border-radius: 999px; }
 
 .pd-name { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.4; }
 
@@ -548,7 +614,7 @@ body.shell-body {
   border-radius: 10px;
   cursor: pointer;
 }
-.opt-chip.is-active { border-color: var(--brand-1); color: var(--brand-1); background: #fff1ea; }
+.opt-chip.is-active { border-color: var(--brand-1); color: var(--brand-1); background: #f2f2f2; }
 
 .qty-row { display: flex; align-items: center; justify-content: space-between; }
 .stepper {
@@ -622,7 +688,7 @@ body.shell-body {
   height: 36px;
   border-radius: 999px;
   flex: none;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  background: var(--brand-2);
   color: #fff;
   display: flex;
   align-items: center;
@@ -674,9 +740,9 @@ body.shell-body {
 .actionbar .icon-btn.is-active { color: var(--brand-2); }
 .btn--outline {
   flex: 1;
-  background: #fff1ea;
+  background: #f2f2f2;
   color: var(--brand-1);
-  border: 1.5px solid #ffd9c2;
+  border: 1.5px solid #dcdcdc;
 }
 .btn--full { flex: 1; }
 
@@ -817,7 +883,7 @@ body.shell-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff1ea;
+  background: #f2f2f2;
   color: var(--brand-1);
 }
 .info-card__body { flex: 1; min-width: 0; }
@@ -838,7 +904,7 @@ body.shell-body {
   padding: 12px 14px;
   cursor: pointer;
 }
-.option-card.is-active { border-color: var(--brand-1); background: #fff8f4; box-shadow: 0 0 0 3px rgba(255, 122, 69, 0.12); }
+.option-card.is-active { border-color: var(--brand-1); background: #f7f7f7; box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.12); }
 .option-card__icon {
   width: 36px;
   height: 36px;
@@ -942,3 +1008,34 @@ body.shell-body {
 .success-row span:last-child { color: var(--ink); font-weight: 700; }
 
 .success-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 16px; }
+
+/* ===== Desktop web layout (continued): product/cart/checkout ===== */
+@media (min-width: 900px) {
+  html:not(.in-telegram) .pd-topbar {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  html:not(.in-telegram) .pd-gallery { max-width: 1180px; margin: -54px auto 0; border-radius: 24px; }
+  html:not(.in-telegram) .pd-sheet {
+    max-width: 1180px;
+    margin: -18px auto 0;
+    border-radius: 24px 24px 0 0;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  html:not(.in-telegram) .actionbar {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  html:not(.in-telegram) .checkoutbar,
+  html:not(.in-telegram) .bottomnav {
+    max-width: 1180px;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}

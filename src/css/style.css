@@ -1,9 +1,9 @@
 :root {
-  --shop-bg: #fff5ee;
-  --shop-bg-2: #ffe8d6;
-  --brand-1: #ff7a45;
-  --brand-2: #ff4d6d;
-  --ink: #1f2430;
+  --shop-bg: #ffffff;
+  --shop-bg-2: #f5f5f5;
+  --brand-1: #111111;
+  --brand-2: #000000;
+  --ink: #111111;
   --ink-soft: #6b7280;
   --card-bg: #ffffff;
   --field-bg: #f6f7fb;
@@ -104,8 +104,8 @@ body {
   align-items: center;
   justify-content: center;
   color: #fff;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-  box-shadow: 0 10px 20px -8px rgba(255, 77, 109, 0.55);
+  background: var(--brand-2);
+  box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.55);
 }
 
 .brand__title {
@@ -156,9 +156,9 @@ body {
   width: calc(50% - 4px);
   height: calc(100% - 8px);
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  background: var(--brand-2);
   transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
-  box-shadow: 0 8px 16px -6px rgba(255, 77, 109, 0.55);
+  box-shadow: 0 8px 16px -6px rgba(0, 0, 0, 0.55);
 }
 
 .tabs__indicator.to-register { transform: translateX(100%); }
@@ -196,7 +196,7 @@ body {
 
 .field__control:focus-within {
   border-color: var(--brand-1);
-  box-shadow: 0 0 0 4px rgba(255, 122, 69, 0.14);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.14);
   background: #fff;
 }
 
@@ -296,8 +296,8 @@ body {
 
 .btn--primary {
   color: #fff;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-  box-shadow: 0 12px 22px -10px rgba(255, 77, 109, 0.6);
+  background: var(--brand-2);
+  box-shadow: 0 12px 22px -10px rgba(0, 0, 0, 0.6);
 }
 .btn--primary:hover { opacity: 0.95; }
 

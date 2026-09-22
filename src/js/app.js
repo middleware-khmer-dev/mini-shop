@@ -10,6 +10,7 @@
     syncViewportHeight();
     tg.onEvent("themeChanged", applyTelegramTheme);
     tg.onEvent("viewportChanged", syncViewportHeight);
+    document.documentElement.classList.add("in-telegram");
   }
 
   function applyTelegramTheme() {
