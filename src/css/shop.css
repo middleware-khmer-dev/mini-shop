@@ -11,6 +11,7 @@ body.shell-body {
   margin: 0 auto;
   min-height: 100vh;
   min-height: 100dvh;
+  min-height: calc(var(--tg-viewport-height, 100dvh));
   background: var(--shop-bg);
   display: flex;
   flex-direction: column;
@@ -898,6 +899,7 @@ body.shell-body {
 .success-shell {
   min-height: 100vh;
   min-height: 100dvh;
+  min-height: calc(var(--tg-viewport-height, 100dvh));
   max-width: 480px;
   margin: 0 auto;
   display: flex;

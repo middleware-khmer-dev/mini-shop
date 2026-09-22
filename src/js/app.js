@@ -7,7 +7,9 @@
     tg.ready();
     tg.expand();
     applyTelegramTheme();
+    syncViewportHeight();
     tg.onEvent("themeChanged", applyTelegramTheme);
+    tg.onEvent("viewportChanged", syncViewportHeight);
   }
 
   function applyTelegramTheme() {
@@ -19,6 +21,29 @@
     if (p.button_color) root.setProperty("--tg-theme-button-color", p.button_color);
     if (p.button_text_color) root.setProperty("--tg-theme-button-text-color", p.button_text_color);
   }
+
+  // Keep the app shell sized to Telegram's actual viewport (differs per
+  // device/screen and changes when the client's own chrome resizes it).
+  function syncViewportHeight() {
+    var height = tg.viewportStableHeight || tg.viewportHeight;
+    if (height) {
+      document.documentElement.style.setProperty("--tg-viewport-height", height + "px");
+    }
+  }
+
+  // Open links via Telegram's own browser when running inside the mini app,
+  // otherwise let the link open normally (new tab in a regular browser/app).
+  document.addEventListener("click", function (e) {
+    var link = e.target.closest("a[href]");
+    if (!link) return;
+    var href = link.getAttribute("href");
+    if (!href || href.charAt(0) === "#") return;
+    var isExternal = /^https?:\/\//i.test(href) && link.hostname !== window.location.hostname;
+    if (tg && (isExternal || link.target === "_blank")) {
+      e.preventDefault();
+      tg.openLink(href, { try_instant_view: false });
+    }
+  });
 
   // ---- Tabs (Login / Register) ----
   var tabLogin = document.getElementById("tabLogin");
