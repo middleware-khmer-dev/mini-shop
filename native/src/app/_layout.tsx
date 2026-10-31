@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Backdrop } from "@/components/Glass";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
+import { ProductsProvider } from "@/lib/products";
 
 const transparentTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: "transparent", card: "transparent" } };
 
@@ -14,6 +15,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
+        <ProductsProvider>
         <CartProvider>
           <View className="flex-1 bg-[#ece8ff]">
             <Backdrop />
@@ -23,6 +25,7 @@ export default function RootLayout() {
             </ThemeProvider>
           </View>
         </CartProvider>
+        </ProductsProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

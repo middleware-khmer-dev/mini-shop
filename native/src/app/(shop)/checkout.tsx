@@ -5,7 +5,8 @@ import { Glass } from "@/components/Glass";
 import { Icon, IconName } from "@/components/Icon";
 import { Media } from "@/components/ProductCard";
 import { ActionBar, Header, Screen } from "@/components/Screen";
-import { PAYMENT_OPTIONS, SHIPPING_OPTIONS, findProduct } from "@/data/shop";
+import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
+import { useProducts } from "@/lib/products";
 import { money, useCart } from "@/lib/cart";
 import { Row } from "@/components/Row";
 
@@ -41,6 +42,7 @@ function OptionList({ options, value, onChange }: { options: readonly Opt[]; val
 const H = ({ children }: { children: string }) => <Text className="text-base font-bold text-ink">{children}</Text>;
 
 export default function Checkout() {
+  const { find: findProduct } = useProducts();
   const { lines, subtotal, clear } = useCart();
   const [ship, setShip] = useState<string>("standard");
   const [pay, setPay] = useState<string>("cod");
@@ -78,7 +80,7 @@ export default function Checkout() {
             if (!p) return null;
             return (
               <View key={l.productId} className="flex-row items-center gap-3">
-                <View className="h-12 w-12 overflow-hidden rounded-xl"><Media media={p.media} className="flex-1" /></View>
+                <View className="h-12 w-12 overflow-hidden rounded-xl"><Media product={p} className="flex-1" /></View>
                 <Text numberOfLines={1} className="flex-1 text-[13px] text-ink">{p.name}</Text>
                 <Text className="text-[12px] text-soft">×{l.qty}</Text>
                 <Text className="text-[13px] font-bold text-ink">{money(p.price * l.qty)}</Text>

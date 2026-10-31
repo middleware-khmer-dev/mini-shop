@@ -3,14 +3,16 @@ import { router } from "expo-router";
 import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Glass } from "@/components/Glass";
-import { Icon } from "@/components/Icon";
+import { Icon, IconName } from "@/components/Icon";
 import { ProductCard } from "@/components/ProductCard";
 import { Header, Screen } from "@/components/Screen";
-import { categories, products } from "@/data/shop";
+import { StatusBanner } from "@/components/StatusBanner";
+import { Product } from "@/data/shop";
+import { useProducts } from "@/lib/products";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 
-function Grid({ items }: { items: typeof products }) {
+function Grid({ items }: { items: Product[] }) {
   return (
     <View className="-mx-1.5 flex-row flex-wrap">
       {items.map((p) => (
@@ -25,6 +27,7 @@ function Grid({ items }: { items: typeof products }) {
 export default function Home() {
   const { session } = useAuth();
   const { count } = useCart();
+  const { products, categories } = useProducts();
   return (
     <Screen
       header={
@@ -57,6 +60,8 @@ export default function Home() {
         </Glass>
       </Pressable>
 
+      <StatusBanner />
+
       <LinearGradient colors={["rgba(120,90,255,0.8)", "rgba(255,90,170,0.65)"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="min-h-[118px] justify-center gap-2 overflow-hidden rounded-3xl border border-white/50 p-5">
         <View className="self-start rounded-full bg-white/25 px-2.5 py-1">
           <Text className="text-[11px] font-semibold text-white">ការផ្តល់ជូនពិសេស</Text>
@@ -71,7 +76,7 @@ export default function Home() {
           {categories.map((c) => (
             <Pressable key={c.id} onPress={() => router.push({ pathname: "/catalog", params: { cat: c.id } })} className="w-16 items-center gap-1.5">
               <Glass className="h-14 w-14 items-center justify-center rounded-[18px]">
-                <Icon name={c.icon} size={22} />
+                <Icon name={c.icon as IconName} size={22} />
               </Glass>
               <Text numberOfLines={2} className="text-center text-[11px] text-soft">{c.label}</Text>
             </Pressable>
@@ -92,7 +97,7 @@ export default function Home() {
           <Text className="text-base font-bold text-ink">ថ្មីៗសម្រាប់អ្នក</Text>
           <Pressable onPress={() => router.push("/catalog")}><Text className="text-[12.5px] font-semibold text-ink">មើលទាំងអស់</Text></Pressable>
         </View>
-        <Grid items={products.slice(4)} />
+        <Grid items={products.slice(4, 8)} />
       </View>
     </Screen>
   );

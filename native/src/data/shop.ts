@@ -7,18 +7,45 @@ export type Product = {
   sold: string;
   media: number;
   badge: string | null;
+  image?: string;
+  category?: string;
+  description?: string;
 };
 
-export const categories = [
-  { id: "fashion", label: "សម្លៀកបំពាក់", icon: "shirt" },
-  { id: "electronics", label: "អេឡិចត្រូនិច", icon: "bolt" },
-  { id: "beauty", label: "សម្ផស្ស", icon: "sparkle" },
-  { id: "grocery", label: "គ្រឿងទេស", icon: "basket" },
-  { id: "home", label: "គេហដ្ឋាន", icon: "home" },
-  { id: "toys", label: "ក្មេងលេង", icon: "gift" },
-] as const;
+/** Shape returned by https://fakestoreapi.com/products */
+export type ApiProduct = {
+  id: number;
+  title: string;
+  price: number;
+  description: string;
+  category: string;
+  image: string;
+  rating?: { rate: number; count: number };
+};
 
-export const products: Product[] = [
+export const fromApi = (a: ApiProduct): Product => ({
+  id: a.id,
+  name: a.title,
+  price: a.price,
+  oldPrice: null,
+  rating: a.rating?.rate ?? 0,
+  sold: String(a.rating?.count ?? 0),
+  media: (a.id % 6) + 1,
+  badge: null,
+  image: a.image,
+  category: a.category,
+  description: a.description,
+});
+
+export const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
+  "men's clothing": { label: "ខោអាវបុរស", icon: "shirt" },
+  "women's clothing": { label: "ខោអាវស្ត្រី", icon: "sparkle" },
+  jewelery: { label: "គ្រឿងអលង្ការ", icon: "gift" },
+  electronics: { label: "អេឡិចត្រូនិច", icon: "bolt" },
+};
+
+/** Offline fallback shown only if the products API cannot be reached. */
+export const fallbackProducts: Product[] = [
   { id: 1, name: "ស្រោមកាបូបស្បែកស្ត្រី ម៉ូតថ្មី", price: 18.5, oldPrice: 25, rating: 4.8, sold: "1.2k", media: 1, badge: "-26%" },
   { id: 2, name: "កាស Bluetooth ថាមពលបាទ ANC", price: 32, oldPrice: null, rating: 4.6, sold: "860", media: 2, badge: "ថ្មី" },
   { id: 3, name: "ក្រែមថែរក្សាស្បែកមុខ Vitamin C", price: 9.9, oldPrice: 13, rating: 4.7, sold: "2.3k", media: 3, badge: "-24%" },
@@ -28,9 +55,6 @@ export const products: Product[] = [
   { id: 7, name: "នាឡិកាឆ្លាតវៃតាមដានសុខភាព", price: 45, oldPrice: 59, rating: 4.7, sold: "700", media: 2, badge: "-24%" },
   { id: 8, name: "កាបូបស្ពាយកម្សាន្តធំ", price: 21, oldPrice: null, rating: 4.6, sold: "330", media: 1, badge: null },
 ];
-
-export const findProduct = (id: number | string | undefined) =>
-  products.find((p) => p.id === Number(id));
 
 export const mediaColors: Record<number, [string, string]> = {
   1: ["#9a9a9a", "#4a4a4a"],

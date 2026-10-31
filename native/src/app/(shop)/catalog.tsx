@@ -5,20 +5,23 @@ import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { ProductCard } from "@/components/ProductCard";
 import { Header, Screen } from "@/components/Screen";
-import { categories, products } from "@/data/shop";
+import { StatusBanner } from "@/components/StatusBanner";
+import { useProducts } from "@/lib/products";
 
 export default function Catalog() {
   const params = useLocalSearchParams<{ cat?: string }>();
+  const { products, categories } = useProducts();
   const [active, setActive] = useState(params.cat ?? "all");
   const [query, setQuery] = useState("");
   const [sorted, setSorted] = useState(false);
 
   const list = useMemo(() => {
-    // Category is demo-only data (products aren't tagged), so chips don't filter, as on the web version.
     const q = query.trim().toLowerCase();
-    const out = products.filter((p) => !q || p.name.toLowerCase().includes(q));
+    const out = products.filter(
+      (p) => (active === "all" || p.category === active) && (!q || p.name.toLowerCase().includes(q)),
+    );
     return sorted ? [...out].sort((a, b) => a.price - b.price) : out;
-  }, [query, sorted]);
+  }, [products, active, query, sorted]);
 
   const chips = [{ id: "all", label: "ទាំងអស់" }, ...categories.map((c) => ({ id: c.id, label: c.label }))];
 
@@ -37,6 +40,8 @@ export default function Catalog() {
         <Icon name="search" size={16} color="#6b7280" />
         <TextInput value={query} onChangeText={setQuery} placeholder="ស្វែងរកទំនិញ..." placeholderTextColor="#a9adb8" className="flex-1 py-3 text-[13.5px] text-ink" />
       </Glass>
+
+      <StatusBanner />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
         {chips.map((c) => (

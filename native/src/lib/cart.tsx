@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { findProduct } from "@/data/shop";
+import { useProducts } from "@/lib/products";
 
 export type Line = { productId: number; qty: number; variant: string };
 
@@ -24,6 +24,7 @@ const Ctx = createContext<CartCtx | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<Line[]>(INITIAL);
+  const { find: findProduct } = useProducts();
 
   const value = useMemo<CartCtx>(() => {
     let subtotal = 0;
@@ -56,7 +57,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       remove: (productId) => setLines((prev) => prev.filter((l) => l.productId !== productId)),
       clear: () => setLines([]),
     };
-  }, [lines]);
+  }, [lines, findProduct]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

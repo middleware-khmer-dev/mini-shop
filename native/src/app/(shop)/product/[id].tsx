@@ -5,17 +5,16 @@ import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { Media } from "@/components/ProductCard";
 import { ActionBar, Screen } from "@/components/Screen";
-import { findProduct, products } from "@/data/shop";
+import { useProducts } from "@/lib/products";
 import { money, useCart } from "@/lib/cart";
 
-const COLORS = ["#2a2f3a", "#ff7a45", "#4a8cff", "#e5e7eb"];
 const SIZES = ["S", "M", "L", "XL"];
 
 export default function ProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const product = findProduct(id) ?? products[0];
+  const { find, products, categories } = useProducts();
+  const product = find(id) ?? products[0];
   const { add } = useCart();
-  const [color, setColor] = useState(0);
   const [size, setSize] = useState(1);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<"desc" | "reviews">("desc");
@@ -23,7 +22,8 @@ export default function ProductScreen() {
   const [added, setAdded] = useState(false);
 
   const off = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : 0;
-  const variant = `${SIZES[size]}`;
+  const isClothing = product.category?.includes("clothing") ?? false;
+  const variant = isClothing ? SIZES[size] : "";
 
   const addToCart = () => {
     add(product.id, qty, variant);
@@ -38,7 +38,7 @@ export default function ProductScreen() {
       <Screen withActionBar contentClassName="md:flex-row md:gap-10 md:pt-6">
         <View className="md:w-1/2">
           <View className="aspect-square w-full overflow-hidden md:rounded-3xl">
-            <Media media={product.media} className="flex-1" />
+            <Media product={product} className="flex-1" />
           </View>
           <View className="absolute inset-x-3 top-3 flex-row items-center justify-between md:hidden">
             <Pressable onPress={() => router.back()} accessibilityLabel="ត្រឡប់ក្រោយ" className={circle}><Icon name="back" size={18} /></Pressable>
@@ -48,7 +48,7 @@ export default function ProductScreen() {
 
         <Glass strong className="-mt-5 gap-4 rounded-t-3xl p-5 md:mt-0 md:flex-1 md:rounded-3xl">
           <View className="flex-row items-center gap-2">
-            <View className="rounded-full bg-white/70 px-2.5 py-1"><Text className="text-[11px] font-semibold text-ink">អេឡិចត្រូនិច</Text></View>
+            <View className="rounded-full bg-white/70 px-2.5 py-1"><Text className="text-[11px] font-semibold text-ink">{categories.find((c) => c.id === product.category)?.label ?? product.category}</Text></View>
             {product.badge ? <View className="rounded-full bg-black px-2.5 py-1"><Text className="text-[11px] font-bold text-white">{product.badge}</Text></View> : null}
           </View>
           <Text className="text-xl font-bold text-ink">{product.name}</Text>
@@ -63,15 +63,7 @@ export default function ProductScreen() {
             {off ? <View className="rounded-full bg-black px-2 py-0.5"><Text className="text-[11px] font-bold text-white">-{off}%</Text></View> : null}
           </View>
 
-          <View className="gap-2">
-            <Text className="text-sm font-bold text-ink">ពណ៌</Text>
-            <View className="flex-row gap-2.5">
-              {COLORS.map((c, i) => (
-                <Pressable key={c} onPress={() => setColor(i)} style={{ backgroundColor: c }} className={`h-10 w-10 rounded-xl border-2 ${color === i ? "border-ink" : "border-white"}`} />
-              ))}
-            </View>
-          </View>
-
+          {isClothing ? (
           <View className="gap-2">
             <Text className="text-sm font-bold text-ink">ទំហំ</Text>
             <View className="flex-row gap-2">
@@ -82,6 +74,7 @@ export default function ProductScreen() {
               ))}
             </View>
           </View>
+          ) : null}
 
           <View className="flex-row items-center justify-between">
             <Text className="text-sm font-bold text-ink">ចំនួន</Text>
@@ -100,7 +93,7 @@ export default function ProductScreen() {
             ))}
           </View>
           {tab === "desc" ? (
-            <Text className="text-[13px] leading-6 text-soft">ផលិតផលគុណភាពខ្ពស់ រចនាស្អាតសម្រាប់ការប្រើប្រាស់ប្រចាំថ្ងៃ។ សម្ភារៈមានម៉ាត់ត្រូវបានចម្រើនសុវត្ថិភាព និងដឹកជញ្ជូនលឿន។ មានការធានារយៈពេល ១២ខែ និងអាចប្តូរ/សងវិញបាននៅក្នុងរយៈពេល ៧ថ្ងៃ ប្រសិនបើមានបញ្ហាពីរោងចក្រ។</Text>
+            <Text className="text-[13px] leading-6 text-soft">{product.description ?? ""}</Text>
           ) : (
             <View className="gap-1">
               <Text className="text-[13px] font-bold text-ink">⭐ {product.rating} / 5</Text>

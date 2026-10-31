@@ -1,4 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "react-native";
 import { router } from "expo-router";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -7,8 +8,16 @@ import { useCart, money } from "@/lib/cart";
 import { Glass } from "./Glass";
 import { Icon } from "./Icon";
 
-export function Media({ media, className = "" }: { media: number; className?: string }) {
-  return <LinearGradient colors={mediaColors[media] ?? mediaColors[1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className={className} />;
+/** Product picture (API image on white) or a gradient placeholder when there is none. */
+export function Media({ product, className = "" }: { product: Product; className?: string }) {
+  if (product.image) {
+    return (
+      <View className={`items-center justify-center bg-white p-3 ${className}`}>
+        <Image source={{ uri: product.image }} resizeMode="contain" accessibilityLabel={product.name} style={{ width: "100%", height: "100%" }} />
+      </View>
+    );
+  }
+  return <LinearGradient colors={mediaColors[product.media] ?? mediaColors[1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className={className} />;
 }
 
 export function ProductCard({ product }: { product: Product }) {
@@ -17,7 +26,7 @@ export function ProductCard({ product }: { product: Product }) {
     <Pressable className="w-full" onPress={() => router.push(`/product/${product.id}`)}>
       <Glass className="rounded-2xl">
         <View className="aspect-square w-full">
-          <Media media={product.media} className="flex-1" />
+          <Media product={product} className="flex-1" />
           {product.badge ? (
             <View className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5">
               <Text className="text-[11px] font-bold text-ink">{product.badge}</Text>

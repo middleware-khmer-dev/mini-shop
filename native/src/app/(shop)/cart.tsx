@@ -5,11 +5,12 @@ import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { Media } from "@/components/ProductCard";
 import { ActionBar, Header, Screen } from "@/components/Screen";
-import { findProduct } from "@/data/shop";
+import { useProducts } from "@/lib/products";
 import { Row } from "@/components/Row";
 import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
 
 export default function Cart() {
+  const { find: findProduct } = useProducts();
   const { lines, count, subtotal, saved, setQty, remove, clear } = useCart();
   const [promo, setPromo] = useState("");
   const [applied, setApplied] = useState(false);
@@ -44,7 +45,7 @@ export default function Cart() {
               if (!p) return null;
               return (
                 <Glass key={l.productId} className="flex-row gap-3 rounded-3xl p-3">
-                  <View className="h-24 w-24 overflow-hidden rounded-2xl"><Media media={p.media} className="flex-1" /></View>
+                  <View className="h-24 w-24 overflow-hidden rounded-2xl"><Media product={p} className="flex-1" /></View>
                   <View className="flex-1 justify-between">
                     <View className="flex-row items-start justify-between gap-2">
                       <Text numberOfLines={2} className="flex-1 text-[13.5px] font-semibold text-ink">{p.name}</Text>
