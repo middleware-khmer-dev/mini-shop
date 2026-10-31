@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { LangSwitch } from "@/components/LangSwitch";
 import { Screen } from "@/components/Screen";
 import { useAddresses } from "@/lib/address";
+import { useOrders } from "@/lib/orders";
 import { useFavorites } from "@/lib/favorites";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -15,6 +16,7 @@ export default function Profile() {
   const { session, logout } = useAuth();
   const { ids } = useFavorites();
   const { addresses } = useAddresses();
+  const { orders } = useOrders();
   return (
     <Screen title={t("profile.title")} contentClassName="gap-4 pt-2">
       <Glass strong className="flex-row items-center gap-4 rounded-3xl p-5">
@@ -24,6 +26,15 @@ export default function Profile() {
           <Text className="text-[13px] text-soft">{session ? session.user.phone : t("profile.loginHint")}</Text>
         </View>
       </Glass>
+      <Pressable onPress={() => router.push("/orders")}>
+        <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
+          <View className="flex-row items-center gap-3">
+            <Icon name="truck" size={18} color="#14141f" />
+            <Text className="text-[14px] font-bold text-ink">{t("orders.title")}</Text>
+          </View>
+          <Text className="text-[13px] text-soft">{orders.length}</Text>
+        </Glass>
+      </Pressable>
       <Pressable onPress={() => router.push("/address")}>
         <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
           <View className="flex-row items-center gap-3">
