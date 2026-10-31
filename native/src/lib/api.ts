@@ -13,7 +13,7 @@ export type PlaceOrderInput = {
   note?: string;
 };
 
-export type PlacedOrder = Pick<Order, "id" | "createdAt" | "items" | "subtotal" | "shipping" | "total"> & { token: string; status: string };
+export type PlacedOrder = Pick<Order, "id" | "createdAt" | "items" | "subtotal" | "shipping" | "total"> & { token: string; status: string; qrImage?: string };
 
 export class OrderError extends Error {
   constructor(public code: string) {
@@ -44,3 +44,9 @@ export const placeOrder = (input: PlaceOrderInput) =>
 /** Current status of an order (needs the token returned when it was placed). */
 export const fetchOrderStatus = (id: string, token: string) =>
   call<{ id: string; status: string }>(`/orders/${encodeURIComponent(id)}`, { headers: { "X-Order-Token": token } }, 10_000);
+
+export type CashQuote = { cashAllowed: boolean; radiusKm: number; distanceKm: number | null };
+
+/** May this place pay cash on delivery? Only deliveries within the shop's radius can; the server decides. */
+export const quoteCash = (location: { lat: number; lng: number } | null) =>
+  call<CashQuote>("/orders/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ location }) }, 10_000);

@@ -92,6 +92,7 @@ export const ADMIN_JS = String.raw`
     var bar = el("div", { class: "gap", style: "margin-bottom:12px" }, [
       el("button", { text: "+ Add product", onclick: function () { showEditor(null); } }),
       el("button", { class: "ghost", text: "Orders", onclick: function () { showOrders(""); } }),
+      el("button", { class: "ghost", text: "Settings", onclick: showSettings }),
       el("button", { class: "ghost", text: "Import sample products", onclick: importSamples }),
       el("button", { class: "ghost", text: "Sign out", onclick: function () { sessionStorage.removeItem("ms_admin"); password = ""; showLogin(); } }),
     ]);
@@ -123,6 +124,53 @@ export const ADMIN_JS = String.raw`
       return chain;
     }).then(function () { return api("GET", "/products"); }).then(function (list) { products = list; showList(); say("Imported " + list.length + " products", true); })
       .catch(function (e) { say("Import failed: " + e.message); });
+  }
+
+  // ---------- settings ----------
+  function showSettings() {
+    clear();
+    api("GET", "/settings").then(function (st) {
+      var lat = el("input", { type: "number", step: "any" }), lng = el("input", { type: "number", step: "any" }), km = el("input", { type: "number", step: "0.5", min: "0.5" });
+      lat.value = st.shop.lat; lng.value = st.shop.lng; km.value = st.radiusKm;
+      var qr = st.qrImage || "";
+      var preview = el("div", { style: "margin-top:6px" });
+      function drawQr() {
+        while (preview.firstChild) preview.removeChild(preview.firstChild);
+        if (qr) {
+          preview.appendChild(el("img", { src: qr, alt: "", style: "max-width:220px;max-height:220px;border:1px solid #eee;border-radius:12px;background:#fff" }));
+          preview.appendChild(el("div", {}, [el("button", { class: "danger", style: "margin-top:6px", text: "Remove picture", onclick: function () { qr = ""; drawQr(); } })]));
+        } else preview.appendChild(el("div", { class: "muted", text: "No QR picture yet." }));
+      }
+      drawQr();
+      var file = el("input", { type: "file", accept: "image/*" });
+      file.addEventListener("change", function () {
+        var one = file.files[0]; file.value = "";
+        if (!one) return;
+        say("Uploading...", true);
+        createImageBitmap(one).then(function (bmp) {
+          var s = Math.min(1, 1000 / Math.max(bmp.width, bmp.height));
+          var c = document.createElement("canvas"); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+          var ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(bmp, 0, 0, c.width, c.height);
+          return new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(new Error("image")); }, "image/png"); });
+        }).then(function (blob) { return api("POST", "/images", blob, "image/png"); }).then(function (r) { qr = r.url; drawQr(); say("Uploaded - press Save", true); })
+          .catch(function (e) { say("Upload failed: " + e.message); });
+      });
+      var save = el("button", { text: "Save", onclick: function () {
+        save.disabled = true;
+        api("PUT", "/settings", { shop: { lat: lat.value, lng: lng.value }, radiusKm: km.value, qrImage: qr }).then(function () { say("Saved", true); showList(); })
+          .catch(function (e) { save.disabled = false; say("Could not save: " + (e.message === "bad_location" ? "latitude/longitude not valid" : e.message === "bad_radius" ? "radius must be 0.5 to 1000 km" : e.message)); });
+      } });
+      app.appendChild(el("div", { class: "card" }, [
+        el("div", { class: "title", text: "Delivery and payment" }),
+        el("div", { class: "muted", text: "Customers within the radius around the shop may pay cash on delivery. Farther away, or without a pin on the map, they must pay by QR." }),
+        el("label", { text: "Shop latitude" }), lat,
+        el("label", { text: "Shop longitude" }), lng,
+        el("div", { class: "muted", style: "margin-top:4px", text: "Tip: in Google Maps or openstreetmap.org, right-click your shop and copy the two numbers." }),
+        el("label", { text: "Cash radius (km)" }), km,
+        el("label", { text: "QR picture customers pay to (your bank's KHQR)" }), preview, el("div", { style: "margin-top:8px" }, [file]),
+        el("div", { class: "gap", style: "margin-top:14px" }, [save, el("button", { class: "ghost", text: "Cancel", onclick: showList })]),
+      ]));
+    }).catch(function (e) { say("Could not load settings: " + e.message); showList(); });
   }
 
   // ---------- orders ----------

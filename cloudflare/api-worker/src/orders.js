@@ -1,9 +1,44 @@
+// Shop settings (set in the admin page): where the shop is, how far it delivers for cash, and the QR picture to pay to.
+export const DEFAULT_SETTINGS = { shop: { lat: 11.5564, lng: 104.9282 }, radiusKm: 10, qrImage: "" }; // Phnom Penh until set
+
+export async function loadSettings(env) {
+  try {
+    const s = JSON.parse((await env.DATA.get("settings")) || "{}");
+    return {
+      shop: Number.isFinite(s?.shop?.lat) && Number.isFinite(s?.shop?.lng) ? { lat: s.shop.lat, lng: s.shop.lng } : DEFAULT_SETTINGS.shop,
+      radiusKm: Number.isFinite(s?.radiusKm) && s.radiusKm > 0 ? s.radiusKm : DEFAULT_SETTINGS.radiusKm,
+      qrImage: typeof s?.qrImage === "string" ? s.qrImage : "",
+    };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+/** Check what the admin sends for the settings; returns { error } or { settings }. */
+export function cleanSettings(input, origin) {
+  const lat = Number(input?.shop?.lat);
+  const lng = Number(input?.shop?.lng);
+  const radiusKm = Number(input?.radiusKm);
+  if (!Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lng) || Math.abs(lng) > 180) return { error: "bad_location" };
+  if (!Number.isFinite(radiusKm) || radiusKm < 0.5 || radiusKm > 1000) return { error: "bad_radius" };
+  const qr = typeof input?.qrImage === "string" ? input.qrImage.trim() : "";
+  if (qr && !(/^https:\/\/[^\s]{1,480}$/.test(qr) || qr.startsWith(`${origin}/img/`))) return { error: "bad_qr" };
+  return { settings: { shop: { lat, lng }, radiusKm: Math.round(radiusKm * 10) / 10, qrImage: qr } };
+}
+
+/** Straight-line distance in km between two points (haversine). */
+export function distanceKm(a, b) {
+  const rad = (d) => (d * Math.PI) / 180;
+  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
 // Orders. The shop app places an order (POST /orders); the Worker works out every price itself from its own
 // product list, so a customer cannot change what they pay. Admins list orders and change their status.
 
 const ALLOWED_ORIGINS = ["https://middleware-khmer-dev.github.io"];
 const SHIPPING = { standard: 1.5, express: 4 }; // keep in step with SHIPPING_OPTIONS in the app
-const PAYMENTS = ["cod", "khqr", "card"];
+const PAYMENTS = ["cod", "khqr"]; // cash on delivery (only near the shop) or QR
 export const STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
 const json = (status, body, headers = {}) =>
@@ -28,7 +63,7 @@ async function sameSecret(a, b) {
 }
 
 /** Check what the app sent and price it from our own products. Returns { error } or { order }. */
-function buildOrder(input, products) {
+function buildOrder(input, products, settings) {
   if (!input || typeof input !== "object") return { error: "bad_request" };
   const name = str(input.customer?.name, 100);
   const phone = str(input.customer?.phone, 30);
@@ -59,6 +94,8 @@ function buildOrder(input, products) {
       lng = null;
     }
   }
+  // cash is only for deliveries within the radius around the shop; farther (or unknown) places pay by QR
+  if (input.payMethod === "cod" && (lat == null || distanceKm(settings.shop, { lat, lng }) > settings.radiusKm)) return { error: "cash_not_allowed" };
   const subtotal = money(items.reduce((s, i) => s + i.price * i.qty, 0));
   const shipping = SHIPPING[input.shippingId];
   return { order: { name, phone, address, lat, lng, note: str(input.note, 500), shipId: input.shippingId, payMethod: input.payMethod, items, subtotal, shipping, total: money(subtotal + shipping) } };
@@ -94,7 +131,8 @@ export async function publicOrders(request, env, url, loadProducts) {
     }
     if (Number(request.headers.get("content-length") || 0) > 20_000) return json(413, { error: "too_large" }, h);
     const input = await request.json().catch(() => null);
-    const { error, order } = buildOrder(input, await loadProducts(env));
+    const settings = await loadSettings(env);
+    const { error, order } = buildOrder(input, await loadProducts(env), settings);
     if (error) return json(400, { error }, h);
 
     const token = hex(crypto.getRandomValues(new Uint8Array(16)));
@@ -107,12 +145,28 @@ export async function publicOrders(request, env, url, loadProducts) {
         )
           .bind(id, token, createdAt, order.name, order.phone, order.address, order.lat, order.lng, order.note, order.shipId, order.payMethod, order.subtotal, order.shipping, order.total, JSON.stringify(order.items))
           .run();
-        return json(200, { id, token, createdAt, status: "pending", items: order.items, subtotal: order.subtotal, shipping: order.shipping, total: order.total }, h);
+        return json(200, { id, token, createdAt, status: "pending", items: order.items, subtotal: order.subtotal, shipping: order.shipping, total: order.total, ...(order.payMethod === "khqr" && settings.qrImage ? { qrImage: settings.qrImage } : {}) }, h);
       } catch (e) {
         if (!/UNIQUE|constraint/i.test(String(e?.message))) return json(500, { error: "could_not_save" }, h);
       }
     }
     return json(500, { error: "could_not_save" }, h);
+  }
+
+  // POST /quote { location } -> may this place pay cash? (the shop's own location stays private)
+  if (request.method === "POST" && url.pathname === "/orders/quote") {
+    if (!ALLOWED_ORIGINS.includes(origin)) return json(403, { error: "origin_not_allowed" }, h);
+    if (env.LIMITER) {
+      const { success } = await env.LIMITER.limit({ key: `quote:${request.headers.get("cf-connecting-ip") || "unknown"}` });
+      if (!success) return json(429, { error: "too_many_requests" }, h);
+    }
+    const body = await request.json().catch(() => null);
+    const lat = Number(body?.location?.lat);
+    const lng = Number(body?.location?.lng);
+    const settings = await loadSettings(env);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return json(200, { cashAllowed: false, radiusKm: settings.radiusKm, distanceKm: null }, h);
+    const km = distanceKm(settings.shop, { lat, lng });
+    return json(200, { cashAllowed: km <= settings.radiusKm, radiusKm: settings.radiusKm, distanceKm: Math.round(km * 10) / 10 }, h);
   }
 
   const m = url.pathname.match(/^\/orders\/(MS\d{6})$/);

@@ -1,5 +1,5 @@
 import { Redirect, router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon, IconName } from "@/components/Icon";
@@ -14,20 +14,21 @@ import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
 import { Order, newOrderId, useOrders } from "@/lib/orders";
-import { ORDERS_API, OrderError, placeOrder as placeRemote } from "@/lib/api";
+import { CashQuote, ORDERS_API, OrderError, placeOrder as placeRemote, quoteCash } from "@/lib/api";
 import { useAddresses } from "@/lib/address";
 
 type Opt = { id: string; icon: string; price?: number };
 
-function OptionList({ options, value, onChange, prefix }: { options: readonly Opt[]; value: string; onChange: (id: string) => void; prefix: string }) {
+function OptionList({ options, value, onChange, prefix, disabled = [] }: { options: readonly Opt[]; value: string; onChange: (id: string) => void; prefix: string; disabled?: string[] }) {
   const { t } = useI18n();
   return (
     <View className="gap-2.5">
       {options.map((o) => {
         const on = o.id === value;
+        const off = disabled.includes(o.id);
         return (
-          <Pressable key={o.id} onPress={() => onChange(o.id)}>
-            <Glass strong={on} className={`flex-row items-center gap-3 rounded-2xl p-3 ${on ? "border-2 border-[#14141f]" : ""}`}>
+          <Pressable key={o.id} disabled={off} onPress={() => onChange(o.id)} accessibilityState={{ disabled: off }}>
+            <Glass strong={on} className={`flex-row items-center gap-3 rounded-2xl p-3 ${on ? "border-2 border-[#14141f]" : ""} ${off ? "opacity-45" : ""}`}>
               <View className={`h-10 w-10 items-center justify-center rounded-xl ${on ? "bg-[#14141f]" : "bg-white/70"}`}>
                 <Icon name={o.icon as IconName} size={18} color={on ? "#fff" : "#111"} />
               </View>
@@ -61,12 +62,39 @@ export default function Checkout() {
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const { addresses, selected, select } = useAddresses();
+  // cash is only for addresses within the shop's radius; the server tells us, and checks again when the order is placed
+  const [cash, setCash] = useState<{ state: "checking" | "ok" | "error"; quote?: CashQuote }>({ state: ORDERS_API ? "checking" : "ok" });
+  const pinKey = selected?.place ? `${selected.place.lat},${selected.place.lng}` : "";
+  useEffect(() => {
+    if (!ORDERS_API) return;
+    let alive = true;
+    setCash({ state: "checking" });
+    quoteCash(selected?.place ?? null)
+      .then((quote) => alive && setCash({ state: "ok", quote }))
+      .catch(() => alive && setCash({ state: "error" }));
+    return () => {
+      alive = false;
+    };
+  }, [pinKey, selected?.id]);
+  const checking = !!ORDERS_API && cash.state === "checking";
+  // while the distance is being checked cash stays selectable (the Pay button waits); once known it is on or off
+  const cashOk = !ORDERS_API || checking || (cash.state === "ok" && cash.quote?.cashAllowed === true);
+  useEffect(() => {
+    if (!cashOk && pay === "cod") setPay("khqr"); // cash no longer possible: switch to QR
+  }, [cashOk, pay]);
+  const cashNote =
+    !ORDERS_API ? ""
+    : cash.state === "checking" ? t("pay.cash.checking")
+    : cash.state === "error" ? t("pay.cash.error")
+    : cash.quote?.distanceKm == null ? t("pay.cash.nopin", { r: cash.quote?.radiusKm ?? 10 })
+    : cash.quote.cashAllowed ? t("pay.cash.ok", { r: cash.quote.radiusKm, km: cash.quote.distanceKm })
+    : t("pay.cash.far", { r: cash.quote.radiusKm, km: cash.quote.distanceKm });
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
   const total = subtotal + shipping;
   const customer = { name: session?.user.name ?? "", phone: session?.user.phone ?? "" };
 
   const placeOrder = async () => {
-    if (placing || lines.length === 0 || !selected) return; // ignore double taps
+    if (placing || lines.length === 0 || !selected || (pay === "cod" && (!cashOk || checking))) return; // ignore double taps
     setPlacing(true);
     setError("");
     haptic("medium");
@@ -83,7 +111,7 @@ export default function Checkout() {
       if (ORDERS_API) {
         // the server works out the prices itself and gives the order its number
         const placed = await placeRemote({ ...base, items: lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant })) });
-        order = { ...base, id: placed.id, createdAt: placed.createdAt, items: placed.items, subtotal: placed.subtotal, shipping: placed.shipping, total: placed.total, token: placed.token, status: placed.status };
+        order = { ...base, ...(placed.qrImage ? { qrImage: placed.qrImage } : {}), id: placed.id, createdAt: placed.createdAt, items: placed.items, subtotal: placed.subtotal, shipping: placed.shipping, total: placed.total, token: placed.token, status: placed.status };
       } else {
         // no server configured (local development): keep the order on this device only
         order = {
@@ -104,7 +132,7 @@ export default function Checkout() {
       router.replace({ pathname: "/success", params: { id: order.id } });
     } catch (e) {
       const code = e instanceof OrderError ? e.code : "network";
-      setError(t(["unknown_product", "bad_phone", "name_required", "network"].includes(code) ? `checkout.err.${code}` : "checkout.err.other"));
+      setError(t(["unknown_product", "bad_phone", "name_required", "network", "cash_not_allowed"].includes(code) ? `checkout.err.${code}` : "checkout.err.other"));
       setPlacing(false);
     }
   };
@@ -148,7 +176,8 @@ export default function Checkout() {
         <OptionList prefix="ship" options={SHIPPING_OPTIONS} value={ship} onChange={setShip} />
 
         <H>{t("checkout.payment")}</H>
-        <OptionList prefix="pay" options={PAYMENT_OPTIONS} value={pay} onChange={setPay} />
+        <OptionList prefix="pay" options={PAYMENT_OPTIONS} value={pay} onChange={setPay} disabled={cashOk ? [] : ["cod"]} />
+        {cashNote ? <Text className="-mt-2 px-1 text-[12px] leading-5 text-soft">{cashNote}</Text> : null}
         <Text className="-mt-2 px-1 text-[12px] leading-5 text-soft">{t(`checkout.hint.${pay}`)}</Text>
 
         <H>{t("checkout.items")}</H>
@@ -193,9 +222,9 @@ export default function Checkout() {
           <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
         </View>
         <Pressable
-          disabled={lines.length === 0 || placing || !selected}
+          disabled={lines.length === 0 || placing || !selected || (pay === "cod" && checking)}
           onPress={placeOrder}
-          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 || placing || !selected ? "opacity-70" : ""}`}
+          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 || placing || !selected || (pay === "cod" && checking) ? "opacity-70" : ""}`}
         >
           {placing ? <ActivityIndicator color="#fff" size="small" /> : null}
           <Text className="text-[14px] font-bold text-white">{placing ? t("checkout.processing") : t("checkout.place")}</Text>

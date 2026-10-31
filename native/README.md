@@ -60,3 +60,6 @@ Pay now sends the order to our API (`EXPO_PUBLIC_ORDERS_API`, the same Worker as
 
 ### Tracking an order
 Account → My orders (`/orders`) lists every order placed on this device with its latest status (looked up from the server when the page opens, or with Refresh status). Tapping an order opens its invoice page, which shows a progress tracker (placed → confirmed → on the way → delivered, or cancelled) and re-checks the server every 30 seconds while the order is still open. Orders are kept per device, so the list is empty on a new phone or after clearing app data; an account-based history needs real customer accounts.
+
+### Payment
+Cash on delivery or QR (no card). Cash is only possible when the selected address has a map pin within the shop's cash radius (10 km by default, set in the admin page's Settings together with the shop's location); farther away, or without a pin, the customer must pay by QR, and the app greys cash out with the distance. The server enforces the same rule. After choosing QR the order page shows the shop's QR picture and the amount; the admin confirms the payment.

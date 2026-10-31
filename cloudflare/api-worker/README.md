@@ -6,6 +6,7 @@ The shop's products come from this Worker, and shop owners manage them in its ad
 | --- | --- | --- |
 | `GET /products` | everyone | the products, same shape as fakestoreapi.com plus an `images` list |
 | `GET /img/<id>` | everyone | a picture from the R2 bucket |
+| `POST /orders/quote` | the shop app | may this pin pay cash? (distance rule) |
 | `POST /orders` | the shop app | place an order (only from the shop's own website); returns the order number and a secret token |
 | `GET /orders/<id>` | the customer's device | the order's status, needs the token from `POST /orders` |
 | `/admin` | admin | the admin page (password): products, pictures and orders |
@@ -18,7 +19,11 @@ Sign in with the admin password, then add / edit / delete products, and add pict
 ## Orders
 The app sends what is in the cart (product ids and quantities), the address, phone, name, note, shipping and payment choice. **The Worker prices the order itself** from its own product list and the shipping table in `src/orders.js` (keep it in step with `SHIPPING_OPTIONS` in the app), so a customer cannot change what they pay. Orders start as `pending`; in the admin page's Orders tab an admin opens an order (customer, phone, address with a map link, note, items) and sets the status: pending, confirmed, shipped, delivered or cancelled. The customer sees the status on the order page in the app.
 
-Payment is not collected yet: the order records the chosen method (cash on delivery, KHQR, card) and the admin confirms it by hand.
+### Payment rules
+- Two payment methods: **cash on delivery** and **QR**. Card is gone.
+- Cash only if the order has a map pin within the cash radius (default 10 km, a circle around the shop in every direction). Farther away, or with no pin, the customer must pay by QR. The server checks this when the order is placed (`cash_not_allowed`), and `POST /orders/quote` lets the app grey out cash in advance without revealing the shop's location.
+- In the admin page, **Settings**: the shop's latitude and longitude, the radius, and a picture of the bank's KHQR. The customer sees that picture, with the amount, on the order page after choosing QR. **Until the shop location is set it defaults to the middle of Phnom Penh.**
+- Payment is not collected automatically: the admin sees the order, checks that the money arrived and sets the status.
 
 ## Storage
 - Product list: one KV key `products` in namespace `mini-shop-data` (binding `DATA`). Fine for a small shop (limit 500 products here); two admins saving at the same moment could overwrite each other.
