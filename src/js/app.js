@@ -137,7 +137,8 @@
       score <= 1 ? "#ef4444" : score === 2 ? "#f59e0b" : score === 3 ? "#eab308" : "#22c55e";
   });
 
-  // ---- Form submit handlers (UI-only stubs) ----
+  // ---- Form submit handlers (use Auth from auth.js) ----
+  if (Auth.isLoggedIn()) { Auth.goHome(); return; }
   var loginForm = document.getElementById("loginForm");
   loginForm.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -159,8 +160,17 @@
       ok = false;
     }
     if (ok) {
-      // Placeholder: wire to real auth API later
-      console.log("Login submitted", { phone });
+      var btn = loginForm.querySelector('button[type="submit"]');
+      var label = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "...";
+      Auth.login(phone.replace(/\s/g, ""), password, loginForm.remember.checked)
+        .then(function () { Auth.goHome(); })
+        .catch(function () {
+          setError(pwField, "លេខទូរស័ព្ទ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ");
+          btn.disabled = false;
+          btn.textContent = label;
+        });
     }
   });
 
@@ -195,8 +205,21 @@
       ok = false;
     }
     if (ok) {
-      // Placeholder: wire to real registration API later
-      console.log("Register submitted", { name: registerForm.fullname.value });
+      var rbtn = registerForm.querySelector('button[type="submit"]');
+      var rlabel = rbtn.textContent;
+      rbtn.disabled = true;
+      rbtn.textContent = "...";
+      Auth.register(
+        registerForm.fullname.value.trim(),
+        registerForm.phone.value.replace(/\s/g, ""),
+        registerForm.password.value
+      )
+        .then(function () { Auth.goHome(); })
+        .catch(function () {
+          setError(fields.phone, "មិនអាចបង្កើតគណនីបានទេ សូមព្យាយាមម្តងទៀត");
+          rbtn.disabled = false;
+          rbtn.textContent = rlabel;
+        });
     }
   });
 
