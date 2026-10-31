@@ -220,7 +220,7 @@ def test_invoice_expires(client, tmp_path):
 # ---- admin page --------------------------------------------------------------------------------
 def test_admin_page_and_script(client):
     r = client.get("/admin")
-    assert r.status_code == 200 and "Mini Shop admin" in r.text and "script-src 'self'" in r.headers["content-security-policy"]
+    assert r.status_code == 200 and "Mini Shop admin" in r.text and "script-src 'self' https://telegram.org" in r.headers["content-security-policy"] and "frame-ancestors https://web.telegram.org" in r.headers["content-security-policy"]
     assert client.get("/admin/").status_code == 200
     js = client.get("/admin/app.js")
     assert js.status_code == 200 and "javascript" in js.headers["content-type"] and "ms_admin" in js.text

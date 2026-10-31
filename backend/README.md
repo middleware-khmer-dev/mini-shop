@@ -23,7 +23,7 @@ pip install -r requirements.txt
 ADMIN_PASSWORD=choose-a-password uvicorn app.main:create_app --factory --port 8000
 ```
 
-Open <http://localhost:8000/admin>, sign in, and add products (**Import sample products** copies the 20 from fakestoreapi.com). For the app, set `EXPO_PUBLIC_PRODUCTS_URL=http://localhost:8000/products` and `EXPO_PUBLIC_ORDERS_API=http://localhost:8000` (orders are only accepted from `ALLOWED_ORIGINS`, see below).
+Open <http://localhost:8000/admin>, sign in (it looks like the shop app: sidebar on desktop, bottom tabs on phones, and it opens fullscreen when launched as a Telegram Mini App), and add products (**Import sample products** copies the 20 from fakestoreapi.com). For the app, set `EXPO_PUBLIC_PRODUCTS_URL=http://localhost:8000/products` and `EXPO_PUBLIC_ORDERS_API=http://localhost:8000` (orders are only accepted from `ALLOWED_ORIGINS`, see below).
 
 With Docker: `docker build -t mini-shop-api backend && docker run -p 8000:8000 -e ADMIN_PASSWORD=... -v mini-shop-data:/data mini-shop-api`.
 

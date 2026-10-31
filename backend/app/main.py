@@ -36,8 +36,9 @@ MAX_ORDER_BYTES = 20_000
 SECURITY = {"x-content-type-options": "nosniff", "referrer-policy": "no-referrer"}
 PUBLIC_CORS = {"access-control-allow-origin": "*", "access-control-allow-methods": "GET, OPTIONS", "access-control-allow-headers": "content-type"}
 ADMIN_CSP = (
-    "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' blob: data: https:; "
-    "connect-src 'self' https://fakestoreapi.com; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    # telegram.org: the Mini App SDK (fullscreen, back button). frame-ancestors: Telegram Web shows Mini Apps in a frame.
+    "default-src 'none'; script-src 'self' https://telegram.org; style-src 'unsafe-inline'; img-src 'self' blob: data: https:; "
+    "connect-src 'self' https://fakestoreapi.com; frame-ancestors https://web.telegram.org https://*.telegram.org; base-uri 'none'; form-action 'none'"
 )
 
 

@@ -36,6 +36,84 @@
   function clear() { while (app.firstChild) app.removeChild(app.firstChild); }
   function money(n) { return "$" + Number(n).toFixed(2); }
 
+  // ---------- shell: sidebar on desktop, top bar + bottom tabs on phones ----------
+  var side = document.getElementById("side"), bar = document.getElementById("bar"), tabs = document.getElementById("tabs");
+  function wipe(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function signOut() { sessionStorage.removeItem("ms_admin"); password = ""; showLogin(); }
+  var NAV = [
+    ["products", "\uD83D\uDECD\uFE0F", "Products", function () { showList(); }],
+    ["orders", "\uD83D\uDCE6", "Orders", function () { showOrders(""); }],
+    ["settings", "\u2699\uFE0F", "Settings", function () { showSettings(); }],
+  ];
+  function nav(active) {
+    document.body.className = "";
+    wipe(side); wipe(bar); wipe(tabs);
+    side.appendChild(el("div", { class: "brand", text: "\uD83D\uDECD\uFE0F Mini Shop" }));
+    bar.appendChild(el("div", { class: "brand", text: "\uD83D\uDECD\uFE0F Mini Shop" }));
+    bar.appendChild(el("div", { class: "sp" }));
+    bar.appendChild(el("button", { class: "ghost small", text: "Sign out", onclick: signOut }));
+    NAV.forEach(function (n) {
+      var on = n[0] === active ? " on" : "";
+      side.appendChild(el("button", { class: "navbtn" + on, onclick: n[3] }, [el("span", { class: "ic", text: n[1] }), el("span", { text: n[2] })]));
+      tabs.appendChild(el("button", { class: "tab" + on, onclick: n[3] }, [el("span", { class: "ic", text: n[1] }), el("span", { text: n[2] })]));
+    });
+    side.appendChild(el("div", { class: "sp" }));
+    side.appendChild(el("button", { class: "navbtn", onclick: signOut }, [el("span", { class: "ic", text: "\u21A9\uFE0F" }), el("span", { text: "Sign out" })]));
+    window.scrollTo(0, 0);
+  }
+  function head(title, actions) {
+    return el("div", { class: "head" }, [el("h1", { text: title })].concat(actions || []));
+  }
+
+  // ---------- Telegram Mini App: open fullscreen, keep clear of Telegram's own buttons ----------
+  var tgBack = null, tgBackFn = null;
+  function setBack(fn) {
+    tgBackFn = fn;
+    if (!tgBack) return;
+    if (fn) tgBack.show(); else tgBack.hide();
+  }
+  (function telegram() {
+    var hash = location.hash || "";
+    var fromTelegram = /tgWebApp(Data|Platform|Version)=/.test(hash) || !!sessionStorage.getItem("__telegram__initParams") || !!window.TelegramWebviewProxy;
+    if (!fromTelegram) return;
+    try {
+      // the SDK reads its launch data from the URL hash; remember it in case the hash is dropped later
+      var params = {};
+      hash.replace(/^#/, "").split("&").forEach(function (part) {
+        var i = part.indexOf("=");
+        if (i > 0) params[decodeURIComponent(part.slice(0, i))] = decodeURIComponent(part.slice(i + 1));
+      });
+      if (Object.keys(params).length) sessionStorage.setItem("__telegram__initParams", JSON.stringify(params));
+    } catch (e) { /* ignore */ }
+    var s = document.createElement("script");
+    s.src = "https://telegram.org/js/telegram-web-app.js";
+    s.onload = function () {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (!tg) return;
+      function ok(v) { try { return tg.isVersionAtLeast(v); } catch (e) { return false; } }
+      function run(f) { try { f(); } catch (e) { /* not supported by this client */ } }
+      function insets() {
+        var sa = tg.safeAreaInset || {}, ca = tg.contentSafeAreaInset || {};
+        var st = document.documentElement.style;
+        st.setProperty("--top", ((sa.top || 0) + (ca.top || 0)) + "px");
+        st.setProperty("--bot", ((sa.bottom || 0) + (ca.bottom || 0)) + "px");
+      }
+      tg.ready(); tg.expand();
+      if (ok("6.9")) { run(function () { tg.setHeaderColor("#f6ecfb"); }); run(function () { tg.setBackgroundColor("#ece8ff"); }); }
+      if (ok("7.10")) run(function () { tg.setBottomBarColor("#ffffff"); });
+      if (ok("7.7")) run(function () { tg.disableVerticalSwipes(); }); // scrolling must not close the app
+      if (ok("8.0") && !tg.isFullscreen) run(function () { tg.requestFullscreen(); }); // phone and desktop; the layout follows the window width
+      insets();
+      ["safeAreaChanged", "contentSafeAreaChanged", "viewportChanged", "fullscreenChanged"].forEach(function (e) { tg.onEvent(e, insets); });
+      if (tg.BackButton) {
+        tgBack = tg.BackButton;
+        tgBack.onClick(function () { if (tgBackFn) tgBackFn(); });
+        setBack(tgBackFn);
+      }
+    };
+    document.head.appendChild(s);
+  })();
+
   // ---------- login ----------
   function showLogin(note) {
     clear();
@@ -48,36 +126,40 @@
       }).catch(function (e) { password = ""; say(e.status === 401 ? "Wrong password" : "Could not sign in (" + e.message + ")"); });
     }
     input.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
-    app.appendChild(el("div", { class: "card" }, [
+    document.body.className = "login";
+    setBack(null);
+    app.appendChild(el("div", { class: "loginwrap" }, [el("div", { class: "card logincard" }, [
+      el("div", { class: "logo", text: "\uD83D\uDECD\uFE0F" }),
+      el("h1", { text: "Mini Shop" }),
+      el("div", { class: "muted", text: "Admin" }),
       el("label", { text: "Password" }), input,
-      el("div", { class: "gap", style: "margin-top:12px" }, [el("button", { text: "Sign in", onclick: go })]),
-    ]));
+      el("div", { style: "margin-top:16px" }, [el("button", { style: "width:100%", text: "Sign in", onclick: go })]),
+    ])]));
     if (note) say(note);
   }
 
   // ---------- list ----------
   function showList() {
-    clear();
-    var bar = el("div", { class: "gap", style: "margin-bottom:12px" }, [
+    clear(); nav("products"); setBack(null);
+    app.appendChild(head("Products", [
+      el("button", { class: "ghost", text: "Import samples", onclick: importSamples }),
       el("button", { text: "+ Add product", onclick: function () { showEditor(null); } }),
-      el("button", { class: "ghost", text: "Orders", onclick: function () { showOrders(""); } }),
-      el("button", { class: "ghost", text: "Settings", onclick: showSettings }),
-      el("button", { class: "ghost", text: "Import sample products", onclick: importSamples }),
-      el("button", { class: "ghost", text: "Sign out", onclick: function () { sessionStorage.removeItem("ms_admin"); password = ""; showLogin(); } }),
-    ]);
-    app.appendChild(bar);
-    if (products.length === 0) app.appendChild(el("div", { class: "card muted", text: "No products yet. Add one, or import the sample products to start." }));
+    ]));
+    if (products.length === 0) app.appendChild(el("div", { class: "card empty", text: "No products yet. Add one, or import the sample products to start." }));
+    var grid = el("div", { class: "grid" });
     products.forEach(function (p) {
-      var thumb = p.images && p.images[0] ? el("img", { class: "thumb", src: p.images[0], alt: "" }) : el("div", { class: "thumb" });
-      app.appendChild(el("div", { class: "card row" }, [
-        thumb,
-        el("div", { class: "grow" }, [
-          el("div", { class: "title", text: p.title }),
-          el("div", { class: "muted", text: money(p.price) + " · " + p.category + " · " + (p.images ? p.images.length : 0) + " picture(s)" }),
+      var pic = el("div", { class: "pimg" }, [p.images && p.images[0] ? el("img", { src: p.images[0], alt: "", loading: "lazy" }) : null]);
+      grid.appendChild(el("div", { class: "card pcard", role: "button", tabindex: "0", onclick: function () { showEditor(p); } }, [
+        pic,
+        el("div", { class: "pname", text: p.title }),
+        el("div", { class: "row" }, [
+          el("div", { class: "price grow", text: money(p.price) }),
+          el("span", { class: "muted", text: (p.images ? p.images.length : 0) + " \uD83D\uDDBC" }),
         ]),
-        el("button", { class: "ghost", text: "Edit", onclick: function () { showEditor(p); } }),
+        el("div", { class: "muted", text: p.category }),
       ]));
     });
+    app.appendChild(grid);
   }
 
   function importSamples() {
@@ -97,7 +179,7 @@
 
   // ---------- settings ----------
   function showSettings() {
-    clear();
+    clear(); nav("settings"); setBack(null);
     api("GET", "/settings").then(function (st) {
       var lat = el("input", { type: "number", step: "any" }), lng = el("input", { type: "number", step: "any" }), km = el("input", { type: "number", step: "0.5", min: "0.5" });
       lat.value = st.shop.lat; lng.value = st.shop.lng; km.value = st.radiusKm;
@@ -157,7 +239,8 @@
         api("PUT", "/settings", { shop: { lat: lat.value, lng: lng.value }, radiusKm: km.value, qrImage: qr, tiers: tiers, expressExtra: extra.value }).then(function () { say("Saved", true); showList(); })
           .catch(function (e) { save.disabled = false; say("Could not save: " + (e.message === "bad_location" ? "latitude/longitude not valid" : e.message === "bad_radius" ? "radius must be 0.5 to 1000 km" : e.message === "bad_tiers" ? "delivery fees: the km steps must grow (3, 5, 10 ...) and every fee must be a number" : e.message === "bad_express" ? "express extra must be a number" : e.message)); });
       } });
-      app.appendChild(el("div", { class: "card" }, [
+      app.appendChild(head("Settings"));
+      app.appendChild(el("div", { class: "card form" }, [
         el("div", { class: "title", text: "Delivery and payment" }),
         el("div", { class: "muted", text: "Customers within the radius around the shop may pay cash on delivery. Farther away, or without a pin on the map, they must pay by QR." }),
         el("label", { text: "Shop latitude" }), lat,
@@ -179,30 +262,31 @@
   function when(iso) { var d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString(); }
 
   function showOrders(filter) {
-    clear();
-    var bar = el("div", { class: "gap", style: "margin-bottom:12px" }, [el("button", { class: "ghost", text: "< Products", onclick: showList })]);
-    var sel = el("select", { style: "width:auto" }, [el("option", { value: "", text: "All orders" })].concat(STATUSES.map(function (s) { return el("option", { value: s, text: s }); })));
-    sel.value = filter;
-    sel.addEventListener("change", function () { showOrders(sel.value); });
-    bar.appendChild(sel);
-    bar.appendChild(el("button", { class: "ghost", text: "Refresh", onclick: function () { showOrders(sel.value); } }));
-    app.appendChild(bar);
+    clear(); nav("orders"); setBack(null);
+    app.appendChild(head("Orders", [el("button", { class: "ghost", text: "Refresh", onclick: function () { showOrders(filter); } })]));
+    var chips = el("div", { class: "filters" });
+    [""].concat(STATUSES).forEach(function (st) {
+      chips.appendChild(el("button", { class: st === filter ? "" : "ghost", text: st || "All", onclick: function () { showOrders(st); } }));
+    });
+    app.appendChild(chips);
+    var list = el("div", { class: "cards2" });
+    app.appendChild(list);
     api("GET", "/orders" + (filter ? "?status=" + encodeURIComponent(filter) : "")).then(function (orders) {
-      if (orders.length === 0) app.appendChild(el("div", { class: "card muted", text: "No orders yet." }));
+      if (orders.length === 0) app.appendChild(el("div", { class: "card empty", text: "No orders yet." }));
       orders.forEach(function (o) {
-        app.appendChild(el("div", { class: "card row", style: "cursor:pointer", onclick: function () { showOrder(o, filter); } }, [
+        list.appendChild(el("div", { class: "card orow row", role: "button", tabindex: "0", onclick: function () { showOrder(o, filter); } }, [
           el("div", { class: "grow" }, [
-            el("div", { class: "title", text: o.id + " · " + o.customer.name }),
-            el("div", { class: "muted", text: when(o.createdAt) + " · " + money(o.total) }),
+            el("div", { class: "title", text: o.id + " \u00B7 " + o.customer.name }),
+            el("div", { class: "muted", text: when(o.createdAt) + " \u00B7 " + o.items.length + " item(s)" }),
           ]),
-          el("span", { class: "chip " + o.status, text: o.status }),
+          el("div", { style: "text-align:right" }, [el("div", { class: "price", text: money(o.total) }), el("span", { class: "chip " + o.status, text: o.status })]),
         ]));
       });
     }).catch(function (e) { say("Could not load orders: " + e.message); });
   }
 
   function showOrder(o, filter) {
-    clear();
+    clear(); nav("orders"); setBack(function () { showOrders(filter); });
     var sel = el("select", {}, STATUSES.map(function (s) { return el("option", { value: s, text: s }); }));
     sel.value = o.status;
     var save = el("button", { text: "Save status", onclick: function () {
@@ -252,12 +336,13 @@
       el("label", { text: "Status" }), sel,
       el("div", { class: "gap", style: "margin-top:14px" }, [save, el("button", { class: "ghost", text: "Back", onclick: function () { showOrders(filter); } })]),
     );
-    app.appendChild(el("div", { class: "card" }, kids));
+    app.appendChild(head("Order " + o.id));
+    app.appendChild(el("div", { class: "card form" }, kids));
   }
 
   // ---------- editor ----------
   function showEditor(p) {
-    clear();
+    clear(); nav("products"); setBack(showList);
     var images = p && p.images ? p.images.slice() : [];
     var f = {
       title: el("input", { maxlength: "200" }), price: el("input", { type: "number", step: "0.01", min: "0" }),
@@ -324,10 +409,13 @@
         .catch(function (e) { say("Could not delete: " + e.message); });
     } }));
 
-    app.appendChild(el("div", { class: "card" }, [
+    app.appendChild(head(p ? "Edit product" : "New product"));
+    app.appendChild(el("div", { class: "card form" }, [
       el("label", { text: "Name" }), f.title,
-      el("label", { text: "Price (USD)" }), f.price,
-      el("label", { text: "Category" }), f.category, cats,
+      el("div", { class: "two" }, [
+        el("div", {}, [el("label", { text: "Price (USD)" }), f.price]),
+        el("div", {}, [el("label", { text: "Category" }), f.category, cats]),
+      ]),
       el("label", { text: "Description" }), f.description,
       el("label", { text: "Pictures (the first one is the main picture; add 3, 4, 5 or more)" }), grid,
       el("div", { style: "margin-top:8px" }, [file]),
