@@ -1,9 +1,8 @@
 import { Redirect, router } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from "react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon, IconName } from "@/components/Icon";
-import { MapPicker } from "@/components/MapPicker";
 import { Media } from "@/components/ProductCard";
 import { ActionBar, Screen } from "@/components/Screen";
 import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
@@ -15,8 +14,7 @@ import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
 import { newOrderId, useOrders } from "@/lib/orders";
-import { loadAddress, saveAddress } from "@/lib/address";
-import type { Place } from "@/lib/geo";
+import { useAddresses } from "@/lib/address";
 
 type Opt = { id: string; icon: string; price?: number };
 
@@ -59,20 +57,11 @@ export default function Checkout() {
   const { addOrder } = useOrders();
   const [ship, setShip] = useState<string>("standard");
   const [pay, setPay] = useState<string>("cod");
-  // delivery address: typed in or picked on the map; remembered for next time
-  const [address, setAddress] = useState("");
-  const [place, setPlace] = useState<Place | null>(null);
-  const [mapOpen, setMapOpen] = useState(false);
-  useEffect(() => {
-    loadAddress().then((s) => {
-      if (s.address) setAddress((now) => now || s.address);
-      if (s.place) setPlace((now) => now ?? s.place);
-    });
-  }, []);
+  const { addresses, selected, select } = useAddresses();
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
   const total = subtotal + shipping;
   const placeOrder = () => {
-    if (placing || lines.length === 0) return; // ignore double taps
+    if (placing || lines.length === 0 || !selected) return; // ignore double taps
     setPlacing(true);
     haptic("medium");
     setTimeout(() => {
@@ -91,10 +80,9 @@ export default function Checkout() {
         total,
         payMethod: pay,
         customer: { name: t("checkout.name"), phone: "012 345 678" },
-        address: address.trim() || t("checkout.addressText"),
-        ...(place ? { location: place } : {}),
+        address: selected.address,
+        ...(selected.place ? { location: selected.place } : {}),
       });
-      saveAddress({ address: address.trim(), place });
       clear();
       router.replace({ pathname: "/success", params: { id } });
     }, 900);
@@ -111,40 +99,29 @@ export default function Checkout() {
         <CheckoutSteps step={2} />
 
         <H>{t("checkout.address")}</H>
-        <Glass strong className="gap-3 rounded-2xl p-3">
-          <View className="flex-row items-start gap-3">
-            <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#14141f]"><Icon name="pin" size={18} color="#fff" /></View>
-            <View className="flex-1 gap-1">
-              <Text className="text-[13.5px] font-bold text-ink">{t("checkout.name")}  <Text className="font-normal text-soft">012 345 678</Text></Text>
-              <TextInput
-                multiline
-                value={address}
-                onChangeText={setAddress}
-                placeholder={t("checkout.addressText")}
-                placeholderTextColor="#a9adb8"
-                style={{ outlineStyle: "none", outlineWidth: 0 } as never}
-                className="min-h-[40px] text-[12.5px] leading-5 text-ink"
-              />
-            </View>
-          </View>
-          {Platform.OS === "web" ? (
-            <>
-              <Pressable onPress={() => setMapOpen(!mapOpen)} className="flex-row items-center justify-center gap-2 rounded-xl border border-glass-line bg-white/70 py-2.5">
-                <Icon name="pin" size={15} color="#14141f" />
-                <Text className="text-[12.5px] font-bold text-ink">{mapOpen ? t("map.close") : place ? t("map.change") : t("map.pick")}</Text>
-              </Pressable>
-              {mapOpen ? (
-                <MapPicker
-                  value={place}
-                  onChange={(p, a) => {
-                    setPlace(p);
-                    if (a) setAddress(a);
-                  }}
-                />
-              ) : null}
-            </>
-          ) : null}
-        </Glass>
+        {addresses.map((a) => {
+          const on = a.id === selected?.id;
+          return (
+            <Pressable key={a.id} onPress={() => select(a.id)}>
+              <Glass strong={on} className={`flex-row items-start gap-3 rounded-2xl p-3 ${on ? "border-2 border-[#14141f]" : ""}`}>
+                <View className={`h-10 w-10 items-center justify-center rounded-xl ${on ? "bg-[#14141f]" : "bg-white/70"}`}>
+                  <Icon name="pin" size={18} color={on ? "#fff" : "#111"} />
+                </View>
+                <View className="flex-1 gap-0.5">
+                  <Text className="text-[13.5px] font-bold text-ink">{t(`address.label.${a.label}`)}  <Text className="font-normal text-soft">{t("checkout.name")} · 012 345 678</Text></Text>
+                  <Text className="text-[12.5px] leading-5 text-soft">{a.address}</Text>
+                </View>
+                <View className={`h-5 w-5 items-center justify-center rounded-full ${on ? "bg-[#14141f]" : "border-2 border-gray-300"}`}>
+                  {on ? <Icon name="check" size={12} color="#fff" /> : null}
+                </View>
+              </Glass>
+            </Pressable>
+          );
+        })}
+        <Pressable onPress={() => router.push("/address")} className="flex-row items-center justify-center gap-2 rounded-2xl border border-glass-line bg-white/70 py-3">
+          <Icon name={addresses.length === 0 ? "plus" : "pin"} size={15} color="#14141f" />
+          <Text className="text-[12.5px] font-bold text-ink">{addresses.length === 0 ? t("checkout.addAddress") : t("checkout.manageAddress")}</Text>
+        </Pressable>
 
         <H>{t("checkout.shipping")}</H>
         <OptionList prefix="ship" options={SHIPPING_OPTIONS} value={ship} onChange={setShip} />
@@ -190,9 +167,9 @@ export default function Checkout() {
           <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
         </View>
         <Pressable
-          disabled={lines.length === 0 || placing}
+          disabled={lines.length === 0 || placing || !selected}
           onPress={placeOrder}
-          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 || placing ? "opacity-70" : ""}`}
+          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 || placing || !selected ? "opacity-70" : ""}`}
         >
           {placing ? <ActivityIndicator color="#fff" size="small" /> : null}
           <Text className="text-[14px] font-bold text-white">{placing ? t("checkout.processing") : t("checkout.place")}</Text>

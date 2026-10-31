@@ -5,6 +5,7 @@ import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { LangSwitch } from "@/components/LangSwitch";
 import { Screen } from "@/components/Screen";
+import { useAddresses } from "@/lib/address";
 import { useFavorites } from "@/lib/favorites";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -13,6 +14,7 @@ export default function Profile() {
   const { t } = useI18n();
   const { session, logout } = useAuth();
   const { ids } = useFavorites();
+  const { addresses } = useAddresses();
   return (
     <Screen title={t("profile.title")} contentClassName="gap-4 pt-2">
       <Glass strong className="flex-row items-center gap-4 rounded-3xl p-5">
@@ -28,7 +30,7 @@ export default function Profile() {
             <Icon name="pin" size={18} color="#14141f" />
             <Text className="text-[14px] font-bold text-ink">{t("address.title")}</Text>
           </View>
-          <Text className="text-[13px] text-soft">{t("checkout.change")}</Text>
+          <Text className="text-[13px] text-soft">{addresses.length}</Text>
         </Glass>
       </Pressable>
       <Pressable onPress={() => router.push("/favorites")}>

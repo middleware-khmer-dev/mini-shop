@@ -5,6 +5,7 @@ import React from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Backdrop } from "@/components/Glass";
+import { AddressProvider } from "@/lib/address";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { FavoritesProvider } from "@/lib/favorites";
@@ -23,6 +24,7 @@ export default function RootLayout() {
       <AuthProvider>
         <ProductsProvider>
         <OrdersProvider>
+        <AddressProvider>
         <CartProvider>
         <FavoritesProvider>
           <View className="flex-1 bg-[#ece8ff]">
@@ -35,6 +37,7 @@ export default function RootLayout() {
           </View>
         </FavoritesProvider>
         </CartProvider>
+        </AddressProvider>
         </OrdersProvider>
         </ProductsProvider>
       </AuthProvider>

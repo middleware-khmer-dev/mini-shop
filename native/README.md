@@ -47,4 +47,5 @@ The heart on a product card or the product page toggles a favorite (saved in `mi
 ## Map (delivery address)
 Checkout has a real OpenStreetMap map (Leaflet, web build only; no API key). "Pick on map" opens it with a fixed pin: drag the map, search a place (Nominatim, Cambodia only) or tap the location button. The street address is looked up after the map stops moving and fills the address box, which can also be typed. The address and pin are saved on the order (`location`) and remembered for next time (`mini_shop_address`). Tiles and address lookup come from OpenStreetMap's free public servers, which are meant for light use; for heavy traffic use a paid tile/geocoding provider.
 
-The same address can be edited ahead of time in Account → Delivery address (`/address`); checkout starts from it.
+### Several addresses
+Account → Delivery addresses (`/address`) is an address book: add as many as needed (Home / Work / Other, typed or picked on the map), edit, delete (tap twice), and tap one to use it at checkout. Checkout lists them to choose from and links to the address book; paying needs an address. Stored in `mini_shop_addresses`; the single address from the earlier version is carried over automatically.
