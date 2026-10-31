@@ -1,0 +1,97 @@
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
+import { Glass } from "@/components/Glass";
+import { Icon } from "@/components/Icon";
+import { Media } from "@/components/ProductCard";
+import { ActionBar, Header, Screen } from "@/components/Screen";
+import { useProducts } from "@/lib/products";
+import { Row } from "@/components/Row";
+import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
+
+export default function Cart() {
+  const { find: findProduct } = useProducts();
+  const { lines, count, subtotal, saved, setQty, remove, clear } = useCart();
+  const [promo, setPromo] = useState("");
+  const [applied, setApplied] = useState(false);
+  const total = subtotal + SHIPPING_DEFAULT;
+  const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
+
+  return (
+    <>
+      <Screen
+        withActionBar={lines.length > 0}
+        header={
+          <Header
+            title={`កន្ត្រករបស់ខ្ញុំ (${count})`}
+            left={<Pressable onPress={() => router.back()} accessibilityLabel="ត្រឡប់ក្រោយ" className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
+            right={<Pressable onPress={clear} accessibilityLabel="លុបទាំងអស់" className={hBtn}><Icon name="trash" size={18} color="#fff" /></Pressable>}
+          />
+        }
+        contentClassName="gap-4 pt-4"
+      >
+        {lines.length === 0 ? (
+          <View className="items-center gap-2 py-20">
+            <Icon name="cart" size={44} color="#9ca3af" />
+            <Text className="text-base font-bold text-ink">កន្ត្រកទទេ</Text>
+            <Pressable onPress={() => router.push("/catalog")} className="mt-2 rounded-2xl bg-[#14141f] px-6 py-3">
+              <Text className="font-bold text-white">ទិញទំនិញ</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            {lines.map((l) => {
+              const p = findProduct(l.productId);
+              if (!p) return null;
+              return (
+                <Glass key={l.productId} className="flex-row gap-3 rounded-3xl p-3">
+                  <View className="h-24 w-24 overflow-hidden rounded-2xl"><Media product={p} className="flex-1" /></View>
+                  <View className="flex-1 justify-between">
+                    <View className="flex-row items-start justify-between gap-2">
+                      <Text numberOfLines={2} className="flex-1 text-[13.5px] font-semibold text-ink">{p.name}</Text>
+                      <Pressable onPress={() => remove(l.productId)} accessibilityLabel="លុប"><Icon name="close" size={16} color="#6b7280" /></Pressable>
+                    </View>
+                    <Text className="text-[12px] text-soft">{l.variant}</Text>
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-base font-extrabold text-ink">{money(p.price * l.qty)}</Text>
+                      <View className="flex-row items-center rounded-xl bg-white/80">
+                        <Pressable onPress={() => setQty(l.productId, l.qty - 1)} accessibilityLabel="ដក" className="h-8 w-8 items-center justify-center"><Icon name="minus" size={14} /></Pressable>
+                        <Text className="w-6 text-center text-[13px] font-bold text-ink">{l.qty}</Text>
+                        <Pressable onPress={() => setQty(l.productId, l.qty + 1)} accessibilityLabel="បូក" className="h-8 w-8 items-center justify-center"><Icon name="plus" size={14} /></Pressable>
+                      </View>
+                    </View>
+                  </View>
+                </Glass>
+              );
+            })}
+
+            <Glass strong className="flex-row items-center gap-2 rounded-2xl p-2 pl-4">
+              <Icon name="gift" size={18} color="#6b7280" />
+              <TextInput value={promo} onChangeText={setPromo} editable={!applied} placeholder={applied ? "បានប្រើកូដរួចហើយ ✓" : "បញ្ចូលកូដបញ្ចុះតម្លៃ"} placeholderTextColor="#a9adb8" className="flex-1 py-2 text-[13px] text-ink" />
+              <Pressable onPress={() => promo.trim() && (setApplied(true), setPromo(""))} className="rounded-xl bg-black px-4 py-2.5"><Text className="text-[12.5px] font-bold text-white">ប្រើប្រាស់</Text></Pressable>
+            </Glass>
+
+            <Text className="text-base font-bold text-ink">សេចក្តីសង្ខេបការបញ្ជាទិញ</Text>
+            <Glass strong className="gap-2.5 rounded-3xl p-4">
+              <Row label="តម្លៃទំនិញ" value={money(subtotal)} />
+              <Row label="បានសន្សំ" value={`-${money(saved)}`} green />
+              <Row label="ថ្លៃដឹកជញ្ជូន" value={money(SHIPPING_DEFAULT)} />
+              <View className="my-1 h-px bg-white/70" />
+              <Row label="សរុប" value={money(total)} big />
+            </Glass>
+          </>
+        )}
+      </Screen>
+
+      {lines.length > 0 ? (
+        <ActionBar>
+          <View className="flex-1">
+            <Text className="text-[11px] text-soft">សរុបទាំងអស់</Text>
+            <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
+          </View>
+          <Pressable onPress={() => router.push("/checkout")} className="rounded-2xl bg-[#14141f] px-8 py-3.5"><Text className="text-[14px] font-bold text-white">ទូទាត់ប្រាក់</Text></Pressable>
+        </ActionBar>
+      ) : null}
+    </>
+  );
+}

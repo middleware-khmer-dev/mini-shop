@@ -1,0 +1,118 @@
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
+import { Glass } from "@/components/Glass";
+import { Icon, IconName } from "@/components/Icon";
+import { Media } from "@/components/ProductCard";
+import { ActionBar, Header, Screen } from "@/components/Screen";
+import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
+import { useProducts } from "@/lib/products";
+import { money, useCart } from "@/lib/cart";
+import { Row } from "@/components/Row";
+
+type Opt = { id: string; title: string; sub: string; icon: string; price?: number };
+
+function OptionList({ options, value, onChange }: { options: readonly Opt[]; value: string; onChange: (id: string) => void }) {
+  return (
+    <View className="gap-2.5">
+      {options.map((o) => {
+        const on = o.id === value;
+        return (
+          <Pressable key={o.id} onPress={() => onChange(o.id)}>
+            <Glass strong={on} className={`flex-row items-center gap-3 rounded-2xl p-3 ${on ? "border-violet-500" : ""}`}>
+              <View className={`h-10 w-10 items-center justify-center rounded-xl ${on ? "bg-[#14141f]" : "bg-white/70"}`}>
+                <Icon name={o.icon as IconName} size={18} color={on ? "#fff" : "#111"} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[13.5px] font-bold text-ink">{o.title}</Text>
+                <Text className="text-[12px] text-soft">{o.sub}</Text>
+              </View>
+              {o.price != null ? <Text className="text-[13px] font-bold text-ink">{money(o.price)}</Text> : null}
+              <View className={`h-5 w-5 items-center justify-center rounded-full border-2 ${on ? "border-ink" : "border-gray-300"}`}>
+                {on ? <View className="h-2.5 w-2.5 rounded-full bg-ink" /> : null}
+              </View>
+            </Glass>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const H = ({ children }: { children: string }) => <Text className="text-base font-bold text-ink">{children}</Text>;
+
+export default function Checkout() {
+  const { find: findProduct } = useProducts();
+  const { lines, subtotal, clear } = useCart();
+  const [ship, setShip] = useState<string>("standard");
+  const [pay, setPay] = useState<string>("cod");
+  const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
+  const total = subtotal + shipping;
+  const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
+
+  return (
+    <>
+      <Screen
+        withActionBar
+        header={<Header title="ទូទាត់ប្រាក់" left={<Pressable onPress={() => router.back()} accessibilityLabel="ត្រឡប់ក្រោយ" className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
+        contentClassName="gap-5 pt-4"
+      >
+        <H>អាសយដ្ឋានដឹកជញ្ជូន</H>
+        <Glass strong className="flex-row items-start gap-3 rounded-2xl p-3">
+          <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#14141f]"><Icon name="pin" size={18} color="#fff" /></View>
+          <View className="flex-1 gap-1">
+            <Text className="text-[13.5px] font-bold text-ink">សុវណ្ណារី  <Text className="font-normal text-soft">012 345 678</Text></Text>
+            <Text className="text-[12.5px] text-soft">ផ្ទះលេខ 12, ផ្លូវ 271, សង្កាត់ទឹកល្អក់ទី1, ខណ្ឌទួលគោក, ភ្នំពេញ</Text>
+          </View>
+          <Text className="text-[12px] font-bold text-ink">ប្តូរ</Text>
+        </Glass>
+
+        <H>ការដឹកជញ្ជូន</H>
+        <OptionList options={SHIPPING_OPTIONS} value={ship} onChange={setShip} />
+
+        <H>វិធីទូទាត់ប្រាក់</H>
+        <OptionList options={PAYMENT_OPTIONS} value={pay} onChange={setPay} />
+
+        <H>ទំនិញក្នុងការបញ្ជាទិញ</H>
+        <Glass className="gap-3 rounded-2xl p-3">
+          {lines.map((l) => {
+            const p = findProduct(l.productId);
+            if (!p) return null;
+            return (
+              <View key={l.productId} className="flex-row items-center gap-3">
+                <View className="h-12 w-12 overflow-hidden rounded-xl"><Media product={p} className="flex-1" /></View>
+                <Text numberOfLines={1} className="flex-1 text-[13px] text-ink">{p.name}</Text>
+                <Text className="text-[12px] text-soft">×{l.qty}</Text>
+                <Text className="text-[13px] font-bold text-ink">{money(p.price * l.qty)}</Text>
+              </View>
+            );
+          })}
+        </Glass>
+
+        <H>កំណត់ចំណាំ (ស្រេចចិត្ត)</H>
+        <TextInput multiline numberOfLines={2} placeholder="ឧ. សូមទូរស័ព្ទមុនដឹក..." placeholderTextColor="#a9adb8" className="min-h-[64px] rounded-2xl border border-glass-line bg-white/60 p-3 text-[13px] text-ink" />
+
+        <Glass strong className="gap-2.5 rounded-3xl p-4">
+          <Row label="តម្លៃទំនិញ" value={money(subtotal)} />
+          <Row label="ថ្លៃដឹកជញ្ជូន" value={money(shipping)} />
+          <View className="my-1 h-px bg-white/70" />
+          <Row label="សរុប" value={money(total)} big />
+        </Glass>
+      </Screen>
+
+      <ActionBar>
+        <View className="flex-1">
+          <Text className="text-[11px] text-soft">សរុបទាំងអស់</Text>
+          <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
+        </View>
+        <Pressable
+          disabled={lines.length === 0}
+          onPress={() => { clear(); router.replace({ pathname: "/success", params: { total: total.toFixed(2), pay } }); }}
+          className={`rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 ? "opacity-50" : ""}`}
+        >
+          <Text className="text-[14px] font-bold text-white">បញ្ជាទិញ</Text>
+        </Pressable>
+      </ActionBar>
+    </>
+  );
+}
