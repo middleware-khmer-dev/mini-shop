@@ -33,3 +33,6 @@ If the request fails, a few sample products are shown with a retry banner.
 
 ## Telegram integration
 Inside the Telegram client (`src/lib/telegram.tsx`): the Back button shows on every page except home (the app has no back buttons of its own); the page title is a small glass label centered on the same row as Telegram's Back / Close buttons; taps give haptic feedback. The cart's "Checkout" and checkout's "Pay now" are in-app buttons. The bottom nav is hidden on product, cart, checkout and success pages. The cart is saved on the device and survives a refresh.
+
+## Orders and invoice
+Paying saves an order on the device (`src/lib/orders.tsx`; items are a snapshot). The order page is an invoice (`src/app/(shop)/success.tsx`) that can be downloaded as a PDF or an image (`src/lib/invoice.ts`). The invoice is drawn on a canvas, so Khmer text is rendered by the browser exactly as on screen, and the PDF is a one-page A4-width PDF holding that picture (text in it is not selectable). No server is involved.

@@ -13,6 +13,7 @@ import { haptic } from "@/lib/telegram";
 import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
+import { newOrderId, useOrders } from "@/lib/orders";
 
 type Opt = { id: string; icon: string; price?: number };
 
@@ -52,6 +53,7 @@ export default function Checkout() {
   const { find: findProduct } = useProducts();
   const { session, ready } = useAuth();
   const { lines, subtotal, clear } = useCart();
+  const { addOrder } = useOrders();
   const [ship, setShip] = useState<string>("standard");
   const [pay, setPay] = useState<string>("cod");
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
@@ -61,8 +63,25 @@ export default function Checkout() {
     setPlacing(true);
     haptic("medium");
     setTimeout(() => {
+      // keep a snapshot of the order so the invoice can be shown and downloaded later
+      const id = newOrderId();
+      addOrder({
+        id,
+        createdAt: new Date().toISOString(),
+        items: lines.flatMap((l) => {
+          const p = findProduct(l.productId);
+          return p ? [{ productId: l.productId, name: p.name, price: p.price, qty: l.qty, variant: l.variant }] : [];
+        }),
+        subtotal,
+        shipping,
+        shippingId: ship,
+        total,
+        payMethod: pay,
+        customer: { name: t("checkout.name"), phone: "012 345 678" },
+        address: t("checkout.addressText"),
+      });
       clear();
-      router.replace({ pathname: "/success", params: { total: total.toFixed(2), pay } });
+      router.replace({ pathname: "/success", params: { id } });
     }, 900);
   };
   if (ready && !session) return <Redirect href="/login?redirect=/checkout" />;

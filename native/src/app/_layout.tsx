@@ -8,6 +8,7 @@ import { Backdrop } from "@/components/Glass";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { I18nProvider } from "@/lib/i18n";
+import { OrdersProvider } from "@/lib/orders";
 import { ProductsProvider } from "@/lib/products";
 import { TelegramBackButton, TelegramProvider } from "@/lib/telegram";
 
@@ -20,6 +21,7 @@ export default function RootLayout() {
       <I18nProvider>
       <AuthProvider>
         <ProductsProvider>
+        <OrdersProvider>
         <CartProvider>
           <View className="flex-1 bg-[#ece8ff]">
             <Backdrop />
@@ -30,6 +32,7 @@ export default function RootLayout() {
             </ThemeProvider>
           </View>
         </CartProvider>
+        </OrdersProvider>
         </ProductsProvider>
       </AuthProvider>
       </I18nProvider>

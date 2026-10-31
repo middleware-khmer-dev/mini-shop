@@ -4,7 +4,7 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 export type IconName =
   | "home" | "grid" | "cart" | "user" | "shirt" | "bolt" | "sparkle" | "basket" | "gift" | "bell"
   | "search" | "filter" | "back" | "trash" | "close" | "plus" | "minus" | "heart" | "share" | "star"
-  | "truck" | "cash" | "qr" | "card" | "pin" | "check";
+  | "truck" | "cash" | "qr" | "card" | "pin" | "check" | "download" | "image";
 
 type Props = { name: IconName; size?: number; color?: string; fill?: string };
 
@@ -38,6 +38,8 @@ export function Icon({ name, size = 20, color = "#111", fill = "none" }: Props) 
     case "card": body = (<><Rect x="2" y="5" width="20" height="14" rx="2" {...p} /><Path d="M2 10h20" {...p} /></>); break;
     case "pin": body = (<><Path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z" {...p} /><Circle cx="12" cy="10" r="2.5" {...p} /></>); break;
     case "check": body = <Path d="m5 12 5 5 9-10" {...p} />; break;
+    case "download": body = <Path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" {...p} />; break;
+    case "image": body = (<><Rect x="3" y="4" width="18" height="16" rx="2" {...p} /><Circle cx="9" cy="10" r="1.6" {...p} /><Path d="m21 16-5-5-9 9" {...p} /></>); break;
   }
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
