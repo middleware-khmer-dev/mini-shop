@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Backdrop } from "@/components/Glass";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
+import { I18nProvider } from "@/lib/i18n";
 import { ProductsProvider } from "@/lib/products";
 import { TelegramProvider } from "@/lib/telegram";
 
@@ -16,6 +17,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <TelegramProvider>
+      <I18nProvider>
       <AuthProvider>
         <ProductsProvider>
         <CartProvider>
@@ -29,6 +31,7 @@ export default function RootLayout() {
         </CartProvider>
         </ProductsProvider>
       </AuthProvider>
+      </I18nProvider>
       </TelegramProvider>
     </SafeAreaProvider>
   );

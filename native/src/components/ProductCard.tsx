@@ -7,6 +7,7 @@ import { mediaColors, Product } from "@/data/shop";
 import { useCart, money } from "@/lib/cart";
 import { Glass } from "./Glass";
 import { Icon } from "./Icon";
+import { useI18n } from "@/lib/i18n";
 
 /** Product picture (API image on white) or a gradient placeholder when there is none. */
 export function Media({ product, className = "" }: { product: Product; className?: string }) {
@@ -21,6 +22,7 @@ export function Media({ product, className = "" }: { product: Product; className
 }
 
 export function ProductCard({ product }: { product: Product }) {
+  const { t } = useI18n();
   const { add } = useCart();
   return (
     <Pressable className="w-full" onPress={() => router.push(`/product/${product.id}`)}>
@@ -43,7 +45,7 @@ export function ProductCard({ product }: { product: Product }) {
           <View className="flex-row items-center gap-1">
             <Icon name="star" size={12} color="#f59e0b" />
             <Text className="text-[11px] text-soft">
-              {product.rating} · លក់ហើយ {product.sold}
+              {product.rating} · {t("card.reviews", { n: product.sold })}
             </Text>
           </View>
           <View className="flex-row items-center justify-between">
@@ -52,7 +54,7 @@ export function ProductCard({ product }: { product: Product }) {
               <Text className="text-base font-extrabold text-ink">{money(product.price)}</Text>
             </View>
             <Pressable
-              accessibilityLabel="ដាក់ក្នុងកន្ត្រក"
+              accessibilityLabel={t("card.add")}
               onPress={(e) => {
                 e.stopPropagation();
                 add(product.id, 1);

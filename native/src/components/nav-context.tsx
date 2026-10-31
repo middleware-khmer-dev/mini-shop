@@ -1,4 +1,6 @@
 import { usePathname } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTelegram } from "@/lib/telegram";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { Animated, NativeScrollEvent, NativeSyntheticEvent, Platform, useWindowDimensions } from "react-native";
 
@@ -11,7 +13,15 @@ type NavCtx = {
 
 const Ctx = createContext<NavCtx | null>(null);
 export const NAV_HEIGHT = 64;
-export const PILL_BOTTOM_SPACE = 98;
+/** Height of the bottom bar (without the device bottom inset): 6 top + 44 icon row + 10 bottom */
+export const PILL_BOTTOM_SPACE = 60;
+
+/** Bottom inset from the device (home indicator) or Telegram, whichever is larger */
+export function useBottomInset() {
+  const insets = useSafeAreaInsets();
+  const tg = useTelegram();
+  return Math.max(insets.bottom, tg.insets.bottom);
+}
 
 export function NavProvider({ children }: { children: React.ReactNode }) {
   const { width } = useWindowDimensions();
