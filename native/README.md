@@ -27,3 +27,6 @@ Without it, a demo (mock) login is used.
 Products load from `https://fakestoreapi.com/products` (override with `EXPO_PUBLIC_PRODUCTS_URL`).
 Fields used: `id, title, price, description, category, image, rating{rate,count}`. Categories are derived from the data.
 If the request fails, a few sample products are shown with a retry banner.
+
+## Language (Khmer / English)
+`src/lib/i18n.tsx` holds both dictionaries; the choice is saved on the device. Switch it from the home header, the login screen or the Account tab. Add a string by adding the same key to both `km` and `en`. Product names and descriptions come from the products API and are not translated.

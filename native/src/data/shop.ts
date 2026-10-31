@@ -37,11 +37,11 @@ export const fromApi = (a: ApiProduct): Product => ({
   description: a.description,
 });
 
-export const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
-  "men's clothing": { label: "ខោអាវបុរស", icon: "shirt" },
-  "women's clothing": { label: "ខោអាវស្ត្រី", icon: "sparkle" },
-  jewelery: { label: "គ្រឿងអលង្ការ", icon: "gift" },
-  electronics: { label: "អេឡិចត្រូនិច", icon: "bolt" },
+export const CATEGORY_ICONS: Record<string, string> = {
+  "men's clothing": "shirt",
+  "women's clothing": "sparkle",
+  jewelery: "gift",
+  electronics: "bolt",
 };
 
 /** Offline fallback shown only if the products API cannot be reached. */
@@ -66,12 +66,12 @@ export const mediaColors: Record<number, [string, string]> = {
 };
 
 export const SHIPPING_OPTIONS = [
-  { id: "standard", title: "ដឹកជញ្ជូនធម្មតា", sub: "2–3 ថ្ងៃធ្វើការ", price: 1.5, icon: "truck" },
-  { id: "express", title: "ដឹកជញ្ជូនលឿន", sub: "ក្នុងរយៈពេល 24 ម៉ោង", price: 4, icon: "bolt" },
+  { id: "standard", price: 1.5, icon: "truck" },
+  { id: "express", price: 4, icon: "bolt" },
 ] as const;
 
 export const PAYMENT_OPTIONS = [
-  { id: "cod", title: "បង់ប្រាក់ពេលទទួលទំនិញ", sub: "Cash on Delivery", icon: "cash" },
-  { id: "khqr", title: "KHQR", sub: "ស្កេនទូទាត់តាមធនាគារ", icon: "qr" },
-  { id: "card", title: "កាតឥណទាន / ដេប៊ីត", sub: "Visa, Mastercard", icon: "card" },
+  { id: "cod", icon: "cash" },
+  { id: "khqr", icon: "qr" },
+  { id: "card", icon: "card" },
 ] as const;

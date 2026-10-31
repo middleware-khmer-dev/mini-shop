@@ -3,7 +3,7 @@ import { Animated, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTelegram } from "@/lib/telegram";
 import { Glass } from "./Glass";
-import { NAV_HEIGHT, PILL_BOTTOM_SPACE, useNav } from "./nav-context";
+import { NAV_HEIGHT, PILL_BOTTOM_SPACE, useBottomInset, useNav } from "./nav-context";
 
 type Props = {
   header?: React.ReactNode;
@@ -48,8 +48,8 @@ export function Screen({ header, children, withActionBar, contentClassName = "" 
 /** Sticky bar (checkout / add to cart) that sits above the nav and drops down when it hides. */
 export function ActionBar({ children }: { children: React.ReactNode }) {
   const { hidden, wide } = useNav();
-  const insets = useSafeAreaInsets();
-  const bottom = hidden.interpolate({ inputRange: [0, 1], outputRange: [wide ? 0 : PILL_BOTTOM_SPACE + insets.bottom, 0] });
+  const bottomInset = useBottomInset();
+  const bottom = hidden.interpolate({ inputRange: [0, 1], outputRange: [wide ? 0 : PILL_BOTTOM_SPACE + bottomInset, 0] });
   return (
     <Animated.View style={{ position: "absolute", left: 0, right: 0, zIndex: 40, bottom }}>
       <Glass solid className="flex-row items-center gap-3 border-x-0 px-4 pb-3 pt-3">

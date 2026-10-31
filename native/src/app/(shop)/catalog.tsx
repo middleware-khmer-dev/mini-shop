@@ -7,8 +7,10 @@ import { ProductCard } from "@/components/ProductCard";
 import { Header, Screen } from "@/components/Screen";
 import { StatusBanner } from "@/components/StatusBanner";
 import { useProducts } from "@/lib/products";
+import { useI18n } from "@/lib/i18n";
 
 export default function Catalog() {
+  const { t } = useI18n();
   const params = useLocalSearchParams<{ cat?: string }>();
   const { products, categories } = useProducts();
   const [active, setActive] = useState(params.cat ?? "all");
@@ -23,13 +25,13 @@ export default function Catalog() {
     return sorted ? [...out].sort((a, b) => a.price - b.price) : out;
   }, [products, active, query, sorted]);
 
-  const chips = [{ id: "all", label: "ទាំងអស់" }, ...categories.map((c) => ({ id: c.id, label: c.label }))];
+  const chips = [{ id: "all", label: t("common.all") }, ...categories.map((c) => ({ id: c.id, label: t(`cat.${c.id}`, { fallback: c.id }) }))];
 
   return (
     <Screen
       header={
         <Header
-          title="កាតាឡុក"
+          title={t("catalog.title")}
           left={<View className="h-10 w-10" />}
           right={<View className="h-10 w-10" />}
         />
@@ -38,7 +40,7 @@ export default function Catalog() {
     >
       <Glass strong className="flex-row items-center gap-2 rounded-full px-4">
         <Icon name="search" size={16} color="#6b7280" />
-        <TextInput value={query} onChangeText={setQuery} placeholder="ស្វែងរកទំនិញ..." placeholderTextColor="#a9adb8" className="flex-1 py-3 text-[13.5px] text-ink" />
+        <TextInput value={query} onChangeText={setQuery} placeholder={t("catalog.search")} placeholderTextColor="#a9adb8" className="flex-1 py-3 text-[13.5px] text-ink" />
       </Glass>
 
       <StatusBanner />
@@ -52,17 +54,17 @@ export default function Catalog() {
       </ScrollView>
 
       <View className="flex-row items-center justify-between">
-        <Text className="text-[12.5px] text-soft">បង្ហាញ {list.length} ទំនិញ</Text>
+        <Text className="text-[12.5px] text-soft">{t("catalog.showing", { n: list.length })}</Text>
         <Pressable onPress={() => setSorted(true)} className="rounded-full border border-glass-line bg-white/55 px-3 py-1.5">
-          <Text className="text-[12px] font-semibold text-ink">តម្លៃទាប → ខ្ពស់</Text>
+          <Text className="text-[12px] font-semibold text-ink">{t("catalog.sort")}</Text>
         </Pressable>
       </View>
 
       {list.length === 0 ? (
         <View className="items-center gap-1 py-16">
           <Icon name="search" size={36} color="#9ca3af" />
-          <Text className="font-bold text-ink">រកមិនឃើញទំនិញ</Text>
-          <Text className="text-[12.5px] text-soft">សូមសាកល្បងពាក្យផ្សេង</Text>
+          <Text className="font-bold text-ink">{t("catalog.empty")}</Text>
+          <Text className="text-[12.5px] text-soft">{t("catalog.emptySub")}</Text>
         </View>
       ) : (
         <View className="-mx-1.5 flex-row flex-wrap">

@@ -15,7 +15,7 @@ async function call(path: string, body: Record<string, string>): Promise<Session
     await new Promise((r) => setTimeout(r, 400));
     return {
       token: `demo.${body.phone}.${Date.now()}`,
-      user: { phone: body.phone, name: body.fullname || "សុវណ្ណារី" },
+      user: { phone: body.phone, name: body.fullname || "Sovannary" },
     };
   }
   const res = await fetch(API_BASE + path, {

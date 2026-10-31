@@ -1,9 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { ApiProduct, CATEGORY_LABELS, Product, fallbackProducts, fromApi } from "@/data/shop";
+import { ApiProduct, CATEGORY_ICONS, Product, fallbackProducts, fromApi } from "@/data/shop";
 
 const PRODUCTS_URL = process.env.EXPO_PUBLIC_PRODUCTS_URL ?? "https://fakestoreapi.com/products";
 
-export type Category = { id: string; label: string; icon: string };
+export type Category = { id: string; icon: string };
 
 type Ctx = {
   products: Product[];
@@ -48,7 +48,7 @@ export function ProductsProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<Ctx>(() => {
     const ids = Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[];
-    const categories = ids.map((id) => ({ id, label: CATEGORY_LABELS[id]?.label ?? id, icon: CATEGORY_LABELS[id]?.icon ?? "grid" }));
+    const categories = ids.map((id) => ({ id, icon: CATEGORY_ICONS[id] ?? "grid" }));
     return {
       products,
       categories,
