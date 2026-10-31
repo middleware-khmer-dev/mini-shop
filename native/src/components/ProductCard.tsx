@@ -5,6 +5,7 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { mediaColors, Product } from "@/data/shop";
 import { useCart, money } from "@/lib/cart";
+import { useReviews } from "@/lib/reviews";
 import { useFavorites } from "@/lib/favorites";
 import { haptic } from "@/lib/telegram";
 import { Glass } from "./Glass";
@@ -28,6 +29,8 @@ export function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
   const { has, toggle } = useFavorites();
   const fav = has(product.id);
+  const { stats } = useReviews();
+  const st = stats(product);
   return (
     <Pressable className="w-full" onPress={() => router.push(`/product/${product.id}`)}>
       <Glass className="rounded-2xl">
@@ -60,7 +63,7 @@ export function ProductCard({ product }: { product: Product }) {
           <View className="flex-row items-center gap-1">
             <Icon name="star" size={12} color="#f59e0b" />
             <Text className="text-[11px] text-soft">
-              {product.rating} · {t("card.reviews", { n: product.sold })}
+              {st.rating} · {t("card.reviews", { n: st.label })}
             </Text>
           </View>
           <View className="flex-row items-center justify-between">

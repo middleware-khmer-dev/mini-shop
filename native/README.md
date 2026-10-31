@@ -49,3 +49,6 @@ Checkout has a real OpenStreetMap map (Leaflet, web build only; no API key). "Pi
 
 ### Several addresses
 Account → Delivery addresses (`/address`) is an address book: add as many as needed (Home / Work / Other, typed or picked on the map), edit, delete (tap twice), and tap one to use it at checkout. Checkout lists them to choose from and links to the address book; paying needs an address. Stored in `mini_shop_addresses`; the single address from the earlier version is carried over automatically.
+
+## Reviews
+On a product page, the Reviews tab lets a signed-in customer rate (1-5 stars) and comment; one review per customer per product, which they can edit or delete. Guests see a sign-in button. The product's rating and review count (also on the cards) combine the catalog's numbers with the reviews written here. Reviews are stored on the device (`mini_shop_reviews`), so other customers' devices do not see them until a backend is added.

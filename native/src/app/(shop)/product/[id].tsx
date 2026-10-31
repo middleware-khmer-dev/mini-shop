@@ -1,12 +1,15 @@
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { Media } from "@/components/ProductCard";
+import { Stars } from "@/components/Stars";
 import { ActionBar, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { money, useCart } from "@/lib/cart";
+import { useAuth } from "@/lib/auth";
+import { useReviews } from "@/lib/reviews";
 import { useFavorites } from "@/lib/favorites";
 import { haptic } from "@/lib/telegram";
 import { useI18n } from "@/lib/i18n";
@@ -27,6 +30,27 @@ export default function ProductScreen() {
   const { has, toggle } = useFavorites();
   const wish = has(product.id);
   const [added, setAdded] = useState(false);
+  const { session } = useAuth();
+  const { reviewsFor, submit, remove, stats } = useReviews();
+  const st = stats(product);
+  const reviews = reviewsFor(product.id);
+  const author = session?.user.name ?? "";
+  const mine = author ? reviews.find((r) => r.author === author) : undefined;
+  // the review form: starts from the customer's own review when they already wrote one
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState("");
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    setStars(mine?.rating ?? 0);
+    setComment(mine?.text ?? "");
+    setEditing(false);
+  }, [product.id, mine?.id]);
+  const sendReview = () => {
+    if (!author || stars < 1) return;
+    submit({ productId: product.id, author, rating: stars, text: comment });
+    haptic("medium");
+    setEditing(false);
+  };
 
   const off = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : 0;
   const hasSizes = (product.category?.includes("clothing") ?? false) && !NOT_WEARABLE.test(product.name);
@@ -70,8 +94,8 @@ export default function ProductScreen() {
           <Text className="text-xl font-bold text-ink">{product.name}</Text>
           <View className="flex-row items-center gap-1.5">
             <Icon name="star" size={14} color="#f59e0b" />
-            <Text className="text-[13px] font-bold text-ink">{product.rating}</Text>
-            <Text className="text-[12.5px] text-soft">  {t("card.reviews", { n: product.sold })}</Text>
+            <Text className="text-[13px] font-bold text-ink">{st.rating}</Text>
+            <Text className="text-[12.5px] text-soft">  {t("card.reviews", { n: st.label })}</Text>
           </View>
           <View className="flex-row items-center gap-2">
             <Text className="text-[26px] font-extrabold text-ink">{money(product.price)}</Text>
@@ -102,7 +126,7 @@ export default function ProductScreen() {
           </View>
 
           <View className="flex-row gap-5 border-b border-white/60">
-            {([["desc", t("product.details")], ["reviews", t("product.reviewsTab")]] as const).map(([k, label]) => (
+            {([["desc", t("product.details")], ["reviews", t("product.reviewsTab", { n: st.count })]] as const).map(([k, label]) => (
               <Pressable key={k} onPress={() => setTab(k)} className={`pb-2 ${tab === k ? "border-b-2 border-ink" : ""}`}>
                 <Text className={`text-[13px] font-semibold ${tab === k ? "text-ink" : "text-soft"}`}>{label}</Text>
               </Pressable>
@@ -111,9 +135,62 @@ export default function ProductScreen() {
           {tab === "desc" ? (
             <Text className="text-[13px] leading-6 text-soft">{product.description ?? ""}</Text>
           ) : (
-            <View className="gap-1">
-              <Text className="text-[13px] font-bold text-ink">⭐ {product.rating} / 5</Text>
-              <Text className="text-[13px] text-soft">{t("product.reviewText")}</Text>
+            <View className="gap-3">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-[22px] font-extrabold text-ink">{st.rating}</Text>
+                <View className="gap-0.5">
+                  <Stars value={st.rating} size={14} />
+                  <Text className="text-[12px] text-soft">{t("card.reviews", { n: st.label })}</Text>
+                </View>
+              </View>
+
+              {!session ? (
+                <Pressable onPress={() => router.push(`/login?redirect=/product/${product.id}`)} className="items-center rounded-xl bg-[#14141f] py-3">
+                  <Text className="text-[13px] font-bold text-white">{t("review.signIn")}</Text>
+                </Pressable>
+              ) : mine && !editing ? (
+                <View className="flex-row gap-2">
+                  <Pressable onPress={() => setEditing(true)} className="flex-1 items-center rounded-xl border border-glass-line bg-white/70 py-2.5">
+                    <Text className="text-[12.5px] font-bold text-ink">{t("review.edit")}</Text>
+                  </Pressable>
+                  <Pressable onPress={() => remove(mine.id)} className="flex-1 items-center rounded-xl border border-glass-line bg-white/70 py-2.5">
+                    <Text className="text-[12.5px] font-bold text-red-500">{t("review.delete")}</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View className="gap-2 rounded-2xl border border-glass-line bg-white/60 p-3">
+                  <Text className="text-[13px] font-bold text-ink">{mine ? t("review.edit") : t("review.write")}</Text>
+                  <Stars value={stars} onChange={setStars} size={28} />
+                  <TextInput
+                    multiline
+                    value={comment}
+                    onChangeText={setComment}
+                    maxLength={500}
+                    placeholder={t("review.placeholder")}
+                    placeholderTextColor="#a9adb8"
+                    style={{ outlineStyle: "none", outlineWidth: 0 } as never}
+                    className="min-h-[72px] rounded-xl border border-glass-line bg-white/70 p-3 text-[13px] leading-5 text-ink"
+                  />
+                  <Pressable disabled={stars < 1} onPress={sendReview} className={`items-center rounded-xl bg-[#14141f] py-3 ${stars < 1 ? "opacity-50" : ""}`}>
+                    <Text className="text-[13px] font-bold text-white">{stars < 1 ? t("review.pickStars") : t("review.submit")}</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {reviews.length === 0 ? (
+                <Text className="text-[13px] text-soft">{t("review.empty")}</Text>
+              ) : (
+                reviews.map((r) => (
+                  <View key={r.id} className="gap-1 border-t border-white/60 pt-3">
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-[13px] font-bold text-ink">{r.author}</Text>
+                      <Text className="text-[11px] text-soft">{new Date(r.createdAt).toLocaleDateString()}</Text>
+                    </View>
+                    <Stars value={r.rating} size={12} />
+                    {r.text ? <Text className="text-[13px] leading-5 text-ink">{r.text}</Text> : null}
+                  </View>
+                ))
+              )}
             </View>
           )}
         </Glass>
