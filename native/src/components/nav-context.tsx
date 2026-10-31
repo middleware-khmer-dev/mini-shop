@@ -62,6 +62,9 @@ export function NavProvider({ children }: { children: React.ReactNode }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+/** Pages with one job (product / cart / checkout / success) have no bottom nav on phones. */
+export const NAV_FREE_ROUTES = /^\/(product|cart|checkout|success)/;
+
 export const useNav = () => {
   const c = useContext(Ctx);
   if (!c) throw new Error("useNav outside NavProvider");

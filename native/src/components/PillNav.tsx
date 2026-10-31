@@ -4,7 +4,7 @@ import { Animated, Pressable, Text, View } from "react-native";
 import { useCart } from "@/lib/cart";
 import { Glass } from "./Glass";
 import { Icon, IconName } from "./Icon";
-import { NAV_HEIGHT, PILL_BOTTOM_SPACE, useBottomInset, useNav } from "./nav-context";
+import { NAV_FREE_ROUTES, NAV_HEIGHT, PILL_BOTTOM_SPACE, useBottomInset, useNav } from "./nav-context";
 import { useI18n } from "@/lib/i18n";
 
 const TABS: { key: string; label: string; href: string; icon: IconName; match: string[] }[] = [
@@ -58,6 +58,8 @@ export function PillNav() {
       </Glass>
     );
   }
+
+  if (NAV_FREE_ROUTES.test(path)) return null;
 
   const translateY = hidden.interpolate({ inputRange: [0, 1], outputRange: [0, PILL_BOTTOM_SPACE + bottomInset + 30] });
   const opacity = hidden.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });

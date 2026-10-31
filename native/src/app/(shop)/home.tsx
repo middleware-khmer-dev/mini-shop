@@ -58,7 +58,7 @@ export default function Home() {
       }
       contentClassName="gap-6 pt-4"
     >
-      <Pressable onPress={() => router.push("/catalog")}>
+      <Pressable onPress={() => router.push({ pathname: "/catalog", params: { focus: "1" } })}>
         <Glass strong className="flex-row items-center gap-3 rounded-full px-4 py-3">
           <Icon name="search" size={16} color="#6b7280" />
           <Text className="flex-1 text-[13.5px] text-soft">{t("home.search")}</Text>
