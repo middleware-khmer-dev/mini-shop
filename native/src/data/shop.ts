@@ -8,6 +8,8 @@ export type Product = {
   media: number;
   badge: string | null;
   image?: string;
+  /** every picture the admin added (the first one is `image`); more than one shows a gallery */
+  images?: string[];
   category?: string;
   description?: string;
 };
@@ -20,7 +22,17 @@ export type ApiProduct = {
   description: string;
   category: string;
   image: string;
+  /** optional extra pictures, e.g. added by an admin; the first is used as the main one when `image` is missing */
+  images?: string[];
   rating?: { rate: number; count: number };
+};
+
+const isUrl = (u: unknown): u is string => typeof u === "string" && /^(https?:\/\/|\/)/.test(u.trim());
+
+/** Main picture first, then the others, without duplicates or broken entries. */
+const pictures = (a: ApiProduct): string[] => {
+  const all = [a.image, ...(Array.isArray(a.images) ? a.images : [])].filter(isUrl).map((u) => u.trim());
+  return Array.from(new Set(all));
 };
 
 export const fromApi = (a: ApiProduct): Product => ({
@@ -32,7 +44,8 @@ export const fromApi = (a: ApiProduct): Product => ({
   sold: String(a.rating?.count ?? 0),
   media: (a.id % 6) + 1,
   badge: null,
-  image: a.image,
+  image: pictures(a)[0] ?? a.image,
+  images: pictures(a),
   category: a.category,
   description: a.description,
 });

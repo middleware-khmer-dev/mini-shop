@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
-import { Media } from "@/components/ProductCard";
+import { Gallery } from "@/components/Gallery";
 import { Stars } from "@/components/Stars";
 import { ActionBar, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
@@ -73,9 +73,7 @@ export default function ProductScreen() {
     <>
       <Screen withActionBar contentClassName="md:flex-row md:gap-10 md:pt-6">
         <View className="md:w-1/2">
-          <View className="aspect-square w-full overflow-hidden rounded-3xl bg-white shadow-lg shadow-black/10">
-            <Media product={product} className="flex-1" />
-          </View>
+          <Gallery product={product} />
           <View className="absolute inset-x-3 top-3 z-10 flex-row items-center justify-end md:hidden">
                         <View className="flex-row gap-2">
               <Pressable onPress={() => { toggle(product.id); haptic(); }} accessibilityLabel={t("product.wish")} className={circle}>
