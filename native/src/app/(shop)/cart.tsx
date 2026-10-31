@@ -8,6 +8,7 @@ import { ActionBar, Header, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { Row } from "@/components/Row";
 import { useAuth } from "@/lib/auth";
+import { useMainButton } from "@/lib/telegram";
 import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
 
@@ -19,16 +20,19 @@ export default function Cart() {
   const [promo, setPromo] = useState("");
   const [applied, setApplied] = useState(false);
   const total = subtotal + SHIPPING_DEFAULT;
+  const goPay = () => (session ? router.push("/checkout") : router.push({ pathname: "/login", params: { redirect: "/checkout" } }));
+  // In Telegram the big Main button does the paying; the in-page bar is hidden
+  const native = useMainButton({ text: `${t("cart.pay")} · ${money(total)}`, onPress: goPay, visible: lines.length > 0 });
   const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
 
   return (
     <>
       <Screen
-        withActionBar={lines.length > 0}
+        withActionBar={lines.length > 0 && !native}
         header={
           <Header
             title={t("cart.title", { n: count })}
-            left={<Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
+            left={native ? <View className="h-10 w-10" /> : <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
             right={<Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className={hBtn}><Icon name="trash" size={18} color="#fff" /></Pressable>}
           />
         }
@@ -87,13 +91,13 @@ export default function Cart() {
         )}
       </Screen>
 
-      {lines.length > 0 ? (
+      {lines.length > 0 && !native ? (
         <ActionBar>
           <View className="flex-1">
             <Text className="text-[11px] text-soft">{t("common.totalAll")}</Text>
             <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
           </View>
-          <Pressable onPress={() => (session ? router.push("/checkout") : router.push({ pathname: "/login", params: { redirect: "/checkout" } }))} className="rounded-2xl bg-[#14141f] px-8 py-3.5"><Text className="text-[14px] font-bold text-white">{t("cart.pay")}</Text></Pressable>
+          <Pressable onPress={goPay} className="rounded-2xl bg-[#14141f] px-8 py-3.5"><Text className="text-[14px] font-bold text-white">{t("cart.pay")}</Text></Pressable>
         </ActionBar>
       ) : null}
     </>

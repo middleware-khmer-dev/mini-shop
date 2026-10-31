@@ -9,6 +9,7 @@ import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
 import { useProducts } from "@/lib/products";
 import { useAuth } from "@/lib/auth";
 import { money, useCart } from "@/lib/cart";
+import { useMainButton } from "@/lib/telegram";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
 
@@ -53,14 +54,19 @@ export default function Checkout() {
   const [pay, setPay] = useState<string>("cod");
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
   const total = subtotal + shipping;
+  const placeOrder = () => {
+    clear();
+    router.replace({ pathname: "/success", params: { total: total.toFixed(2), pay } });
+  };
+  const native = useMainButton({ text: `${t("checkout.place")} · ${money(total)}`, onPress: placeOrder, visible: lines.length > 0 });
   if (ready && !session) return <Redirect href="/login?redirect=/checkout" />;
   const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
 
   return (
     <>
       <Screen
-        withActionBar
-        header={<Header title={t("checkout.title")} left={<Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
+        withActionBar={!native}
+        header={<Header title={t("checkout.title")} left={native ? <View className="h-10 w-10" /> : <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
         contentClassName="gap-5 pt-4"
       >
         <H>{t("checkout.address")}</H>
@@ -106,6 +112,7 @@ export default function Checkout() {
         </Glass>
       </Screen>
 
+      {!native ? (
       <ActionBar>
         <View className="flex-1">
           <Text className="text-[11px] text-soft">{t("common.totalAll")}</Text>
@@ -113,12 +120,13 @@ export default function Checkout() {
         </View>
         <Pressable
           disabled={lines.length === 0}
-          onPress={() => { clear(); router.replace({ pathname: "/success", params: { total: total.toFixed(2), pay } }); }}
+          onPress={placeOrder}
           className={`rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 ? "opacity-50" : ""}`}
         >
           <Text className="text-[14px] font-bold text-white">{t("checkout.place")}</Text>
         </Pressable>
       </ActionBar>
+      ) : null}
     </>
   );
 }

@@ -7,6 +7,7 @@ import { Media } from "@/components/ProductCard";
 import { ActionBar, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { money, useCart } from "@/lib/cart";
+import { haptic, useMainButton } from "@/lib/telegram";
 import { useI18n } from "@/lib/i18n";
 
 const SIZES = ["S", "M", "L", "XL"];
@@ -29,10 +30,17 @@ export default function ProductScreen() {
 
   const addToCart = () => {
     add(product.id, qty, variant);
+    haptic("medium");
     setAdded(true);
     setTimeout(() => setAdded(false), 1200);
   };
 
+  const buyNow = () => {
+    add(product.id, qty, variant);
+    router.push("/cart");
+  };
+  // In Telegram the Main button is "Buy now"; the in-page bar keeps favorite + add to cart
+  const native = useMainButton({ text: t("product.buyNow"), onPress: buyNow });
   const circle = "h-10 w-10 items-center justify-center rounded-full bg-white/85";
 
   return (
@@ -43,7 +51,7 @@ export default function ProductScreen() {
             <Media product={product} className="flex-1" />
           </View>
           <View className="absolute inset-x-3 top-3 flex-row items-center justify-between md:hidden">
-            <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={circle}><Icon name="back" size={18} /></Pressable>
+            {native ? <View className="h-10 w-10" /> : <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={circle}><Icon name="back" size={18} /></Pressable>}
             <Pressable accessibilityLabel={t("product.share")} className={circle}><Icon name="share" size={18} /></Pressable>
           </View>
         </View>
@@ -112,9 +120,11 @@ export default function ProductScreen() {
         <Pressable onPress={addToCart} className="h-12 flex-1 items-center justify-center rounded-2xl border border-glass-line bg-white/80">
           <Text className="text-[13.5px] font-bold text-ink">{added ? t("product.added") : t("card.add")}</Text>
         </Pressable>
-        <Pressable onPress={() => { add(product.id, qty, variant); router.push("/cart"); }} className="h-12 flex-1 items-center justify-center rounded-2xl bg-[#14141f]">
-          <Text className="text-[13.5px] font-bold text-white">{t("product.buyNow")}</Text>
-        </Pressable>
+        {!native ? (
+          <Pressable onPress={buyNow} className="h-12 flex-1 items-center justify-center rounded-2xl bg-[#14141f]">
+            <Text className="text-[13.5px] font-bold text-white">{t("product.buyNow")}</Text>
+          </Pressable>
+        ) : null}
       </ActionBar>
     </>
   );

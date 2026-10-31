@@ -37,7 +37,7 @@ export function Screen({ header, children, withActionBar, contentClassName = "" 
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: floating ? headerH : 0, paddingBottom: (withActionBar ? 170 : PILL_BOTTOM_SPACE + 40) + insets.bottom }}
+        contentContainerStyle={{ paddingTop: floating ? headerH : 0, paddingBottom: (withActionBar ? 110 : PILL_BOTTOM_SPACE + 40) + insets.bottom }}
       >
         <View className={`mx-auto w-full max-w-[1180px] px-4 md:px-10 ${contentClassName}`}>{children}</View>
       </ScrollView>
@@ -47,15 +47,15 @@ export function Screen({ header, children, withActionBar, contentClassName = "" 
 
 /** Sticky bar (checkout / add to cart) that sits above the nav and drops down when it hides. */
 export function ActionBar({ children }: { children: React.ReactNode }) {
-  const { hidden, wide } = useNav();
+  const { wide } = useNav();
   const bottomInset = useBottomInset();
-  const bottom = hidden.interpolate({ inputRange: [0, 1], outputRange: [wide ? 0 : PILL_BOTTOM_SPACE + bottomInset, 0] });
+  // Pages that use this bar have no bottom nav, so it sits flush at the bottom
   return (
-    <Animated.View style={{ position: "absolute", left: 0, right: 0, zIndex: 40, bottom }}>
-      <Glass solid className="flex-row items-center gap-3 border-x-0 px-4 pb-3 pt-3">
+    <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 40 }}>
+      <Glass solid className="flex-row items-center gap-3 border-x-0 px-4 pt-3" style={{ paddingBottom: 12 + (wide ? 0 : bottomInset) }}>
         <View className="mx-auto w-full max-w-[1180px] flex-row items-center gap-3">{children}</View>
       </Glass>
-    </Animated.View>
+    </View>
   );
 }
 

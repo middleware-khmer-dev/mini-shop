@@ -5,6 +5,7 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { mediaColors, Product } from "@/data/shop";
 import { useCart, money } from "@/lib/cart";
+import { haptic } from "@/lib/telegram";
 import { Glass } from "./Glass";
 import { Icon } from "./Icon";
 import { useI18n } from "@/lib/i18n";
@@ -58,6 +59,7 @@ export function ProductCard({ product }: { product: Product }) {
               onPress={(e) => {
                 e.stopPropagation();
                 add(product.id, 1);
+                haptic();
               }}
               className="h-8 w-8 items-center justify-center rounded-xl bg-ink active:scale-90"
             >
