@@ -271,12 +271,12 @@ type TgDownload = {
 /** Where invoices are hosted for Telegram's downloadFile (see cloudflare/invoice-worker). Empty = not configured. */
 const INVOICE_API = (process.env.EXPO_PUBLIC_INVOICE_API ?? "").replace(/\/$/, "");
 
-/** Upload the PDF to the invoice server; resolves to its temporary https URL. */
-async function hostPdf(blob: Blob): Promise<string> {
+/** Upload the PDF or PNG to the invoice server; resolves to its temporary https URL. */
+async function hostFile(blob: Blob): Promise<string> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 15_000);
   try {
-    const res = await fetch(`${INVOICE_API}/invoice`, { method: "POST", headers: { "Content-Type": "application/pdf" }, body: blob, signal: ctl.signal });
+    const res = await fetch(`${INVOICE_API}/invoice`, { method: "POST", headers: { "Content-Type": blob.type }, body: blob, signal: ctl.signal });
     const data = (await res.json()) as { url?: string };
     if (!res.ok || !data.url) throw new Error("upload_failed");
     return data.url;
@@ -321,9 +321,9 @@ export async function downloadInvoice(
 
   if (opts.inTelegram) {
     const tg = (globalThis as unknown as { Telegram?: { WebApp?: TgDownload } }).Telegram?.WebApp;
-    if (kind === "pdf" && INVOICE_API && tg?.downloadFile && tg.isVersionAtLeast?.("8.0")) {
+    if (INVOICE_API && tg?.downloadFile && tg.isVersionAtLeast?.("8.0")) {
       try {
-        const url = await hostPdf(blob);
+        const url = await hostFile(blob);
         await new Promise<void>((resolve) => {
           tg.downloadFile!({ url, file_name: filename }, () => resolve());
           setTimeout(resolve, 1500); // older clients may not call back
