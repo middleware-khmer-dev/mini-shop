@@ -37,7 +37,7 @@ export function ProductCard({ product }: { product: Product }) {
           </View>
         </View>
         <View className="gap-1.5 p-3">
-          <Text numberOfLines={2} className="min-h-[36px] text-[13px] font-semibold text-ink">
+          <Text numberOfLines={2} ellipsizeMode="tail" style={{ height: 40, lineHeight: 20, overflow: "hidden" }} className="text-[13px] font-semibold text-ink">
             {product.name}
           </Text>
           <View className="flex-row items-center gap-1">

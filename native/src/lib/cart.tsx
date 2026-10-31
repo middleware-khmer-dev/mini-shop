@@ -3,11 +3,6 @@ import { useProducts } from "@/lib/products";
 
 export type Line = { productId: number; qty: number; variant: string };
 
-// Demo starting cart, same as the web version
-const INITIAL: Line[] = [
-  { productId: 2, qty: 1, variant: "ពណ៌ខ្មៅ" },
-  { productId: 5, qty: 2, variant: "S · ស" },
-];
 
 type CartCtx = {
   lines: Line[];
@@ -23,7 +18,7 @@ type CartCtx = {
 const Ctx = createContext<CartCtx | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [lines, setLines] = useState<Line[]>(INITIAL);
+  const [lines, setLines] = useState<Line[]>([]);
   const { find: findProduct } = useProducts();
 
   const value = useMemo<CartCtx>(() => {

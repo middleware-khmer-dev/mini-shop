@@ -1,6 +1,7 @@
 import React from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTelegram } from "@/lib/telegram";
 import { Glass } from "./Glass";
 import { NAV_HEIGHT, PILL_BOTTOM_SPACE, useNav } from "./nav-context";
 
@@ -16,8 +17,10 @@ type Props = {
 export function Screen({ header, children, withActionBar, contentClassName = "" }: Props) {
   const { onScroll, wide } = useNav();
   const insets = useSafeAreaInsets();
+  const tg = useTelegram();
+  const topPad = wide ? NAV_HEIGHT : header ? 0 : Math.max(insets.top, tg.insets.top);
   return (
-    <View className="flex-1" style={{ paddingTop: wide ? NAV_HEIGHT : 0 }}>
+    <View className="flex-1" style={{ paddingTop: topPad }}>
       {header}
       <ScrollView
         onScroll={onScroll}
@@ -38,7 +41,7 @@ export function ActionBar({ children }: { children: React.ReactNode }) {
   const bottom = hidden.interpolate({ inputRange: [0, 1], outputRange: [wide ? 0 : PILL_BOTTOM_SPACE + insets.bottom, 0] });
   return (
     <Animated.View style={{ position: "absolute", left: 0, right: 0, zIndex: 40, bottom }}>
-      <Glass strong className="flex-row items-center gap-3 border-x-0 px-4 pb-3 pt-3">
+      <Glass solid className="flex-row items-center gap-3 border-x-0 px-4 pb-3 pt-3">
         <View className="mx-auto w-full max-w-[1180px] flex-row items-center gap-3">{children}</View>
       </Glass>
     </Animated.View>
@@ -55,8 +58,11 @@ export function Header({
   right?: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  const tg = useTelegram();
+  // Telegram fullscreen draws Close/menu over the app: keep the header content below them
+  const top = Math.max(insets.top, tg.insets.top);
   return (
-    <Glass dark intensity={60} className="rounded-b-3xl border-t-0" style={{ paddingTop: 14 + insets.top }}>
+    <Glass dark intensity={60} className="rounded-b-3xl border-t-0" style={{ paddingTop: 14 + top }}>
       <View className="mx-auto w-full max-w-[1180px] flex-row items-center justify-between gap-3 px-4 pb-4 md:px-10">
         {left}
         {title ? <View className="flex-1 items-center"><TitleText>{title}</TitleText></View> : <View className="flex-1" />}

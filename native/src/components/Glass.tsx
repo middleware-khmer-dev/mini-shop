@@ -11,17 +11,30 @@ type GlassProps = React.ComponentProps<typeof BlurView> & {
   className?: string;
   dark?: boolean;
   strong?: boolean;
+  /** near-opaque white (use where content scrolls underneath, e.g. the nav) */
+  solid?: boolean;
 };
 
 /** Frosted-glass surface: blur + translucent fill + light border. */
-export function Glass({ className = "", dark, strong, intensity = 40, tint, children, style, ...rest }: GlassProps) {
+export function Glass({ className = "", dark, strong, solid, intensity = 40, tint, children, style, ...rest }: GlassProps) {
+  if (solid) {
+    // Plain near-opaque surface (no blur): stays readable in webviews without backdrop-filter
+    return (
+      <View
+        className={`overflow-hidden border border-glass-line bg-white/95 ${className}`}
+        style={[{ backgroundColor: "rgba(255,255,255,0.96)" }, style as never]}
+      >
+        {children}
+      </View>
+    );
+  }
   const fill = dark ? "bg-glass-dark border-white/25" : strong ? "bg-glass-strong border-glass-line" : "bg-glass border-glass-line";
   return (
     <BlurView
       intensity={intensity}
       tint={tint ?? (dark ? "dark" : "light")}
       className={`overflow-hidden border ${fill} ${className}`}
-      style={style}
+      style={solid ? [{ backgroundColor: "rgba(255,255,255,0.96)" }, style] : style}
       {...rest}
     >
       {children}
