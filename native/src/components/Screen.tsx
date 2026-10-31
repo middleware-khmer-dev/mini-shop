@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTelegram } from "@/lib/telegram";
@@ -15,18 +15,29 @@ type Props = {
 
 /** Scrollable page: reports scroll to the nav (hide/show) and leaves room for it. */
 export function Screen({ header, children, withActionBar, contentClassName = "" }: Props) {
-  const { onScroll, wide } = useNav();
+  const { onScroll, wide, hidden } = useNav();
   const insets = useSafeAreaInsets();
   const tg = useTelegram();
+  const [headerH, setHeaderH] = useState(0);
   const topPad = wide ? NAV_HEIGHT : header ? 0 : Math.max(insets.top, tg.insets.top);
+  // Phone/Telegram: the header floats over the content and slides away with the nav
+  const floating = !!header && !wide;
+  const headerY = hidden.interpolate({ inputRange: [0, 1], outputRange: [0, -(headerH + 12)] });
   return (
     <View className="flex-1" style={{ paddingTop: topPad }}>
-      {header}
+      {header ? (
+        <Animated.View
+          onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
+          style={floating ? { position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, transform: [{ translateY: headerY }] } : undefined}
+        >
+          {header}
+        </Animated.View>
+      ) : null}
       <ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: (withActionBar ? 170 : PILL_BOTTOM_SPACE + 40) + insets.bottom }}
+        contentContainerStyle={{ paddingTop: floating ? headerH : 0, paddingBottom: (withActionBar ? 170 : PILL_BOTTOM_SPACE + 40) + insets.bottom }}
       >
         <View className={`mx-auto w-full max-w-[1180px] px-4 md:px-10 ${contentClassName}`}>{children}</View>
       </ScrollView>
