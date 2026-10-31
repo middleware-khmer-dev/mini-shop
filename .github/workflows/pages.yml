@@ -38,6 +38,7 @@ jobs:
           EXPO_NO_TELEMETRY: "1"
           # temporary host for invoice PDFs (Cloudflare Worker in cloudflare/invoice-worker)
           EXPO_PUBLIC_INVOICE_API: https://mini-shop-invoices.infra-deploy-domain.workers.dev
+          EXPO_PUBLIC_PRODUCTS_URL: https://mini-shop-api.infra-deploy-domain.workers.dev/products
       # Pages serves 404.html for unknown paths; reuse index.html so deep links work
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5
