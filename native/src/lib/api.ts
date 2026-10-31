@@ -45,7 +45,7 @@ export const placeOrder = (input: PlaceOrderInput) =>
 export const fetchOrderStatus = (id: string, token: string) =>
   call<{ id: string; status: string }>(`/orders/${encodeURIComponent(id)}`, { headers: { "X-Order-Token": token } }, 10_000);
 
-export type CashQuote = { cashAllowed: boolean; radiusKm: number; distanceKm: number | null };
+export type CashQuote = { cashAllowed: boolean; radiusKm: number; distanceKm: number | null; fees?: { standard: number; express: number } };
 
 /** May this place pay cash on delivery? Only deliveries within the shop's radius can; the server decides. */
 export const quoteCash = (location: { lat: number; lng: number } | null) =>

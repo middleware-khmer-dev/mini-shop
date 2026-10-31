@@ -132,6 +132,34 @@ export const ADMIN_JS = String.raw`
     api("GET", "/settings").then(function (st) {
       var lat = el("input", { type: "number", step: "any" }), lng = el("input", { type: "number", step: "any" }), km = el("input", { type: "number", step: "0.5", min: "0.5" });
       lat.value = st.shop.lat; lng.value = st.shop.lng; km.value = st.radiusKm;
+      var tiers = (st.tiers || []).map(function (t) { return { upToKm: t.upToKm, fee: t.fee }; });
+      var extra = el("input", { type: "number", step: "0.01", min: "0" });
+      extra.value = st.expressExtra;
+      var tierBox = el("div", {});
+      function drawTiers() {
+        while (tierBox.firstChild) tierBox.removeChild(tierBox.firstChild);
+        tiers.forEach(function (t, i) {
+          var last = i === tiers.length - 1;
+          var up = el("input", { type: "number", step: "0.5", min: "0.5", style: "width:90px" });
+          var fee = el("input", { type: "number", step: "0.01", min: "0", style: "width:90px" });
+          if (!last) up.value = t.upToKm;
+          fee.value = t.fee;
+          up.addEventListener("input", function () { t.upToKm = up.value; });
+          fee.addEventListener("input", function () { t.fee = fee.value; });
+          tierBox.appendChild(el("div", { class: "row", style: "margin:6px 0" }, [
+            last ? el("div", { style: "width:140px", text: "Farther than that" }) : el("div", { class: "row", style: "width:140px" }, [el("span", { text: "Up to" }), up, el("span", { text: "km" })]),
+            el("span", { text: "$" }), fee,
+            last || tiers.length < 2 ? null : el("button", { class: "danger", style: "padding:4px 9px", text: "x", onclick: function () { tiers.splice(i, 1); drawTiers(); } }),
+          ]));
+        });
+      }
+      drawTiers();
+      var addTier = el("button", { class: "ghost", style: "margin-top:4px", text: "+ Add distance step", onclick: function () {
+        if (tiers.length >= 10) return;
+        var prevKm = tiers.length > 1 ? Number(tiers[tiers.length - 2].upToKm) || 0 : 0;
+        tiers.splice(tiers.length - 1, 0, { upToKm: prevKm + 5, fee: tiers[tiers.length - 1].fee });
+        drawTiers();
+      } });
       var qr = st.qrImage || "";
       var preview = el("div", { style: "margin-top:6px" });
       function drawQr() {
@@ -157,8 +185,8 @@ export const ADMIN_JS = String.raw`
       });
       var save = el("button", { text: "Save", onclick: function () {
         save.disabled = true;
-        api("PUT", "/settings", { shop: { lat: lat.value, lng: lng.value }, radiusKm: km.value, qrImage: qr }).then(function () { say("Saved", true); showList(); })
-          .catch(function (e) { save.disabled = false; say("Could not save: " + (e.message === "bad_location" ? "latitude/longitude not valid" : e.message === "bad_radius" ? "radius must be 0.5 to 1000 km" : e.message)); });
+        api("PUT", "/settings", { shop: { lat: lat.value, lng: lng.value }, radiusKm: km.value, qrImage: qr, tiers: tiers, expressExtra: extra.value }).then(function () { say("Saved", true); showList(); })
+          .catch(function (e) { save.disabled = false; say("Could not save: " + (e.message === "bad_location" ? "latitude/longitude not valid" : e.message === "bad_radius" ? "radius must be 0.5 to 1000 km" : e.message === "bad_tiers" ? "delivery fees: the km steps must grow (3, 5, 10 ...) and every fee must be a number" : e.message === "bad_express" ? "express extra must be a number" : e.message)); });
       } });
       app.appendChild(el("div", { class: "card" }, [
         el("div", { class: "title", text: "Delivery and payment" }),
@@ -167,6 +195,10 @@ export const ADMIN_JS = String.raw`
         el("label", { text: "Shop longitude" }), lng,
         el("div", { class: "muted", style: "margin-top:4px", text: "Tip: in Google Maps or openstreetmap.org, right-click your shop and copy the two numbers." }),
         el("label", { text: "Cash radius (km)" }), km,
+        el("label", { text: "Delivery fee by distance from the shop" }),
+        el("div", { class: "muted", text: "Standard delivery costs the fee of the first row the distance fits in. A customer without a map pin pays the last row, so they are encouraged to pick their location." }),
+        tierBox, addTier,
+        el("label", { text: "Express delivery costs this much extra ($)" }), extra,
         el("label", { text: "QR picture customers pay to (your bank's KHQR)" }), preview, el("div", { style: "margin-top:8px" }, [file]),
         el("div", { class: "gap", style: "margin-top:14px" }, [save, el("button", { class: "ghost", text: "Cancel", onclick: showList })]),
       ]));

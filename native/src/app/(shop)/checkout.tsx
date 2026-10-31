@@ -89,7 +89,14 @@ export default function Checkout() {
     : cash.quote?.distanceKm == null ? t("pay.cash.nopin", { r: cash.quote?.radiusKm ?? 10 })
     : cash.quote.cashAllowed ? t("pay.cash.ok", { r: cash.quote.radiusKm, km: cash.quote.distanceKm })
     : t("pay.cash.far", { r: cash.quote.radiusKm, km: cash.quote.distanceKm });
-  const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
+  // delivery fee by distance from the shop (the server works it out; the shop sets the steps in its admin page)
+  const fees = cash.state === "ok" ? cash.quote?.fees : undefined;
+  const shipOptions = SHIPPING_OPTIONS.map((o) => ({ ...o, price: fees?.[o.id as "standard" | "express"] ?? o.price }));
+  const shipping = shipOptions.find((s) => s.id === ship)?.price ?? 0;
+  const shipNote =
+    !ORDERS_API || cash.state !== "ok" || !fees ? ""
+    : cash.quote?.distanceKm == null ? t("ship.nopin")
+    : t("ship.byDistance", { km: cash.quote.distanceKm });
   const total = subtotal + shipping;
   const customer = { name: session?.user.name ?? "", phone: session?.user.phone ?? "" };
 
@@ -173,7 +180,8 @@ export default function Checkout() {
         </Pressable>
 
         <H>{t("checkout.shipping")}</H>
-        <OptionList prefix="ship" options={SHIPPING_OPTIONS} value={ship} onChange={setShip} />
+        <OptionList prefix="ship" options={shipOptions} value={ship} onChange={setShip} />
+        {shipNote ? <Text className="-mt-2 px-1 text-[12px] leading-5 text-soft">{shipNote}</Text> : null}
 
         <H>{t("checkout.payment")}</H>
         <OptionList prefix="pay" options={PAYMENT_OPTIONS} value={pay} onChange={setPay} disabled={cashOk ? [] : ["cod"]} />

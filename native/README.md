@@ -63,3 +63,6 @@ Account → My orders (`/orders`) lists every order placed on this device with i
 
 ### Payment
 Cash on delivery or QR (no card). Cash is only possible when the selected address has a map pin within the shop's cash radius (10 km by default, set in the admin page's Settings together with the shop's location); farther away, or without a pin, the customer must pay by QR, and the app greys cash out with the distance. The server enforces the same rule. After choosing QR the order page shows the shop's QR picture and the amount; the admin confirms the payment.
+
+### Delivery fee by distance
+Standard delivery costs the fee for the distance between the shop and the address's map pin (steps set in the admin page's Settings; defaults $1 up to 3 km, $1.50 up to 5, $2.50 up to 10, $4 up to 25, $6 farther); Express adds a fixed extra ($2.50 by default). The checkout shows both prices and the distance, and the server recomputes the fee when the order is placed. An address without a pin pays the highest step, with a hint to pick the location on the map.

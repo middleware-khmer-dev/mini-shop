@@ -1,5 +1,40 @@
 // Shop settings (set in the admin page): where the shop is, how far it delivers for cash, and the QR picture to pay to.
-export const DEFAULT_SETTINGS = { shop: { lat: 11.5564, lng: 104.9282 }, radiusKm: 10, qrImage: "" }; // Phnom Penh until set
+// Delivery fee by distance from the shop: the first row whose upToKm is not exceeded; the last row (upToKm null) is "farther than that".
+export const DEFAULT_TIERS = [
+  { upToKm: 3, fee: 1 },
+  { upToKm: 5, fee: 1.5 },
+  { upToKm: 10, fee: 2.5 },
+  { upToKm: 25, fee: 4 },
+  { upToKm: null, fee: 6 },
+];
+export const DEFAULT_SETTINGS = { shop: { lat: 11.5564, lng: 104.9282 }, radiusKm: 10, qrImage: "", tiers: DEFAULT_TIERS, expressExtra: 2.5 }; // Phnom Penh until set
+
+const cleanTiers = (t) => {
+  if (!Array.isArray(t) || t.length < 1 || t.length > 10) return null;
+  const out = [];
+  let prev = 0;
+  for (let i = 0; i < t.length; i++) {
+    const fee = Number(t[i]?.fee);
+    if (!Number.isFinite(fee) || fee < 0 || fee > 1000) return null;
+    const last = i === t.length - 1;
+    if (last) {
+      out.push({ upToKm: null, fee: Math.round(fee * 100) / 100 });
+    } else {
+      const km = Number(t[i]?.upToKm);
+      if (!Number.isFinite(km) || km <= prev || km > 1000) return null; // must grow from row to row
+      out.push({ upToKm: Math.round(km * 10) / 10, fee: Math.round(fee * 100) / 100 });
+      prev = km;
+    }
+  }
+  return out;
+};
+
+/** Delivery fee for a distance (null = unknown, which pays the highest row), plus the express surcharge. */
+export function shippingFees(km, settings) {
+  const tiers = settings.tiers;
+  const tier = km == null ? tiers[tiers.length - 1] : tiers.find((t) => t.upToKm != null && km <= t.upToKm) ?? tiers[tiers.length - 1];
+  return { standard: tier.fee, express: Math.round((tier.fee + settings.expressExtra) * 100) / 100 };
+}
 
 export async function loadSettings(env) {
   try {
@@ -8,6 +43,8 @@ export async function loadSettings(env) {
       shop: Number.isFinite(s?.shop?.lat) && Number.isFinite(s?.shop?.lng) ? { lat: s.shop.lat, lng: s.shop.lng } : DEFAULT_SETTINGS.shop,
       radiusKm: Number.isFinite(s?.radiusKm) && s.radiusKm > 0 ? s.radiusKm : DEFAULT_SETTINGS.radiusKm,
       qrImage: typeof s?.qrImage === "string" ? s.qrImage : "",
+      tiers: cleanTiers(s?.tiers) ?? DEFAULT_TIERS,
+      expressExtra: Number.isFinite(s?.expressExtra) && s.expressExtra >= 0 ? s.expressExtra : DEFAULT_SETTINGS.expressExtra,
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -23,7 +60,11 @@ export function cleanSettings(input, origin) {
   if (!Number.isFinite(radiusKm) || radiusKm < 0.5 || radiusKm > 1000) return { error: "bad_radius" };
   const qr = typeof input?.qrImage === "string" ? input.qrImage.trim() : "";
   if (qr && !(/^https:\/\/[^\s]{1,480}$/.test(qr) || qr.startsWith(`${origin}/img/`))) return { error: "bad_qr" };
-  return { settings: { shop: { lat, lng }, radiusKm: Math.round(radiusKm * 10) / 10, qrImage: qr } };
+  const tiers = cleanTiers(input?.tiers);
+  if (!tiers) return { error: "bad_tiers" };
+  const extra = Number(input?.expressExtra);
+  if (!Number.isFinite(extra) || extra < 0 || extra > 1000) return { error: "bad_express" };
+  return { settings: { shop: { lat, lng }, radiusKm: Math.round(radiusKm * 10) / 10, qrImage: qr, tiers, expressExtra: Math.round(extra * 100) / 100 } };
 }
 
 /** Straight-line distance in km between two points (haversine). */
@@ -37,7 +78,7 @@ export function distanceKm(a, b) {
 // product list, so a customer cannot change what they pay. Admins list orders and change their status.
 
 const ALLOWED_ORIGINS = ["https://middleware-khmer-dev.github.io"];
-const SHIPPING = { standard: 1.5, express: 4 }; // keep in step with SHIPPING_OPTIONS in the app
+const SHIPPING_IDS = ["standard", "express"]; // the delivery fee comes from the settings (by distance)
 const PAYMENTS = ["cod", "khqr"]; // cash on delivery (only near the shop) or QR
 export const STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
@@ -71,7 +112,7 @@ function buildOrder(input, products, settings) {
   if (!name) return { error: "name_required" };
   if (!/^[0-9+\-\s()]{5,30}$/.test(phone)) return { error: "bad_phone" };
   if (!address) return { error: "address_required" };
-  if (!(input.shippingId in SHIPPING)) return { error: "bad_shipping" };
+  if (!SHIPPING_IDS.includes(input.shippingId)) return { error: "bad_shipping" };
   if (!PAYMENTS.includes(input.payMethod)) return { error: "bad_payment" };
   if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > 50) return { error: "bad_items" };
 
@@ -97,7 +138,8 @@ function buildOrder(input, products, settings) {
   // cash is only for deliveries within the radius around the shop; farther (or unknown) places pay by QR
   if (input.payMethod === "cod" && (lat == null || distanceKm(settings.shop, { lat, lng }) > settings.radiusKm)) return { error: "cash_not_allowed" };
   const subtotal = money(items.reduce((s, i) => s + i.price * i.qty, 0));
-  const shipping = SHIPPING[input.shippingId];
+  const km = lat == null ? null : distanceKm(settings.shop, { lat, lng });
+  const shipping = shippingFees(km, settings)[input.shippingId];
   return { order: { name, phone, address, lat, lng, note: str(input.note, 500), shipId: input.shippingId, payMethod: input.payMethod, items, subtotal, shipping, total: money(subtotal + shipping) } };
 }
 
@@ -164,9 +206,9 @@ export async function publicOrders(request, env, url, loadProducts) {
     const lat = Number(body?.location?.lat);
     const lng = Number(body?.location?.lng);
     const settings = await loadSettings(env);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return json(200, { cashAllowed: false, radiusKm: settings.radiusKm, distanceKm: null }, h);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return json(200, { cashAllowed: false, radiusKm: settings.radiusKm, distanceKm: null, fees: shippingFees(null, settings) }, h);
     const km = distanceKm(settings.shop, { lat, lng });
-    return json(200, { cashAllowed: km <= settings.radiusKm, radiusKm: settings.radiusKm, distanceKm: Math.round(km * 10) / 10 }, h);
+    return json(200, { cashAllowed: km <= settings.radiusKm, radiusKm: settings.radiusKm, distanceKm: Math.round(km * 10) / 10, fees: shippingFees(km, settings) }, h);
   }
 
   const m = url.pathname.match(/^\/orders\/(MS\d{6})$/);
