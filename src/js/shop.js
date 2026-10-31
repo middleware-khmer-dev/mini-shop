@@ -93,6 +93,32 @@
     document.body.classList.add("has-nav");
   }
 
+  // Icon-only nav: keep an accessible name on each link
+  document.querySelectorAll(".navlink").forEach(function (a) {
+    var label = a.querySelector("span:not(.navlink__badge)");
+    if (label) a.setAttribute("aria-label", label.textContent.trim());
+  });
+
+  // Hide the nav while scrolling down the page, show it again when scrolling up
+  (function () {
+    var lastY = window.pageYOffset || 0;
+    var ticking = false;
+    window.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        var y = window.pageYOffset || 0;
+        var dy = y - lastY;
+        if (Math.abs(dy) > 6) {
+          document.body.classList.toggle("nav-hidden", dy > 0 && y > 60);
+          lastY = y;
+        }
+        if (y <= 60) document.body.classList.remove("nav-hidden");
+        ticking = false;
+      });
+    }, { passive: true });
+  })();
+
   // ---- Bottom nav active state from data-page on <body> ----
   document.addEventListener("DOMContentLoaded", function () {
     var page = document.body.getAttribute("data-page");
