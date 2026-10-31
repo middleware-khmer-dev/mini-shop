@@ -432,6 +432,9 @@ body.shell-body {
   border-radius: 999px;
   background: var(--brand-2);
 }
+/* Brand label only appears in the desktop top navigation bar */
+.navbrand { display: none; }
+
 .navlink__badge {
   position: absolute;
   top: -2px;
@@ -1037,5 +1040,62 @@ body.shell-body {
     max-width: 1180px;
     padding-left: 40px;
     padding-right: 40px;
+  }
+}
+
+/* ===== Desktop: bottom button bar becomes a top navigation bar =====
+   Phones / Telegram keep the tappable bottom bar; real desktop browsers
+   get a horizontal navigation bar pinned to the top of the page. */
+@media (min-width: 900px) {
+  html:not(.in-telegram) body.shell-body[data-page="home"],
+  html:not(.in-telegram) body.shell-body[data-page="catalog"] {
+    padding-top: 64px;
+  }
+
+  html:not(.in-telegram) .bottomnav {
+    top: 0;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    transform: none;
+    max-width: none;
+    width: 100%;
+    height: 64px;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    padding: 0 max(40px, calc((100vw - 1180px) / 2 + 40px));
+    border-top: 0;
+    border-bottom: 1px solid var(--field-border);
+    box-shadow: 0 10px 24px -22px rgba(0, 0, 0, 0.5);
+    z-index: 40;
+  }
+
+  html:not(.in-telegram) .navbrand {
+    display: block;
+    margin-right: auto;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  html:not(.in-telegram) .navlink {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
+  }
+  html:not(.in-telegram) .navlink:hover { background: var(--shop-bg-2); color: var(--ink); }
+  html:not(.in-telegram) .navlink.is-active { background: var(--brand-2); color: #fff; }
+  html:not(.in-telegram) .navlink.is-active .navlink__dot { display: none; }
+  html:not(.in-telegram) .navlink__badge { top: 2px; right: 2px; background: #e11d48; }
+
+  html:not(.in-telegram) body.shell-body[data-page="home"] .topbar,
+  html:not(.in-telegram) body.shell-body[data-page="catalog"] .topbar {
+    top: 64px;
   }
 }
