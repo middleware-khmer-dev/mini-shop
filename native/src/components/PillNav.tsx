@@ -64,7 +64,7 @@ export function PillNav() {
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={{ position: "absolute", left: 0, right: 0, zIndex: 50, alignItems: "center", bottom: 10 + insets.bottom, transform: [{ translateY }], opacity }}
+      style={{ position: "absolute", left: 0, right: 0, zIndex: 50, alignItems: "center", bottom: 24 + insets.bottom, transform: [{ translateY }], opacity }}
     >
       <Glass solid intensity={50} className="w-[92%] max-w-[340px] flex-row rounded-full p-1.5 shadow-lg shadow-black/20">
         {TABS.map((t) => {

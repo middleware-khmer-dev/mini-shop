@@ -62,7 +62,7 @@ export function Header({
   // Telegram fullscreen draws Close/menu over the app: keep the header content below them
   const top = Math.max(insets.top, tg.insets.top);
   return (
-    <Glass dark intensity={60} className="rounded-b-3xl border-t-0" style={{ paddingTop: 14 + top }}>
+    <Glass dark intensity={60} className="rounded-b-3xl border-t-0" style={{ paddingTop: (tg.inTelegram ? 4 : 14) + top }}>
       <View className="mx-auto w-full max-w-[1180px] flex-row items-center justify-between gap-3 px-4 pb-4 md:px-10">
         {left}
         {title ? <View className="flex-1 items-center"><TitleText>{title}</TitleText></View> : <View className="flex-1" />}

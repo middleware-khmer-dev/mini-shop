@@ -10,7 +10,7 @@ type NavCtx = {
 
 const Ctx = createContext<NavCtx | null>(null);
 export const NAV_HEIGHT = 64;
-export const PILL_BOTTOM_SPACE = 84;
+export const PILL_BOTTOM_SPACE = 98;
 
 export function NavProvider({ children }: { children: React.ReactNode }) {
   const { width } = useWindowDimensions();
