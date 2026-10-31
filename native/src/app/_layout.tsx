@@ -8,12 +8,14 @@ import { Backdrop } from "@/components/Glass";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { ProductsProvider } from "@/lib/products";
+import { TelegramProvider } from "@/lib/telegram";
 
 const transparentTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: "transparent", card: "transparent" } };
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      <TelegramProvider>
       <AuthProvider>
         <ProductsProvider>
         <CartProvider>
@@ -27,6 +29,7 @@ export default function RootLayout() {
         </CartProvider>
         </ProductsProvider>
       </AuthProvider>
+      </TelegramProvider>
     </SafeAreaProvider>
   );
 }

@@ -34,7 +34,7 @@ export function PillNav() {
 
   if (wide) {
     return (
-      <Glass strong className="absolute inset-x-0 top-0 z-50 flex-row items-center border-x-0 border-t-0 px-10" style={{ height: NAV_HEIGHT }}>
+      <Glass solid className="absolute inset-x-0 top-0 z-50 flex-row items-center border-x-0 border-t-0 px-10" style={{ height: NAV_HEIGHT }}>
         <Link href="/home" className="mr-auto text-lg font-extrabold text-ink">
           🛍️ Mini Shop
         </Link>
@@ -66,7 +66,7 @@ export function PillNav() {
       pointerEvents="box-none"
       style={{ position: "absolute", left: 0, right: 0, zIndex: 50, alignItems: "center", bottom: 10 + insets.bottom, transform: [{ translateY }], opacity }}
     >
-      <Glass strong intensity={50} className="w-[92%] max-w-[340px] flex-row rounded-full p-1.5">
+      <Glass solid intensity={50} className="w-[92%] max-w-[340px] flex-row rounded-full p-1.5 shadow-lg shadow-black/20">
         {TABS.map((t) => {
           const active = t.key === activeKey;
           return (

@@ -48,7 +48,7 @@ export default function Cart() {
                   <View className="h-24 w-24 overflow-hidden rounded-2xl"><Media product={p} className="flex-1" /></View>
                   <View className="flex-1 justify-between">
                     <View className="flex-row items-start justify-between gap-2">
-                      <Text numberOfLines={2} className="flex-1 text-[13.5px] font-semibold text-ink">{p.name}</Text>
+                      <Text numberOfLines={2} ellipsizeMode="tail" style={{ lineHeight: 19, maxHeight: 38, overflow: "hidden" }} className="flex-1 text-[13.5px] font-semibold text-ink">{p.name}</Text>
                       <Pressable onPress={() => remove(l.productId)} accessibilityLabel="លុប"><Icon name="close" size={16} color="#6b7280" /></Pressable>
                     </View>
                     <Text className="text-[12px] text-soft">{l.variant}</Text>
