@@ -7,7 +7,7 @@ import { Media } from "@/components/ProductCard";
 import { ActionBar, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { money, useCart } from "@/lib/cart";
-import { haptic } from "@/lib/telegram";
+import { haptic, useTelegram } from "@/lib/telegram";
 import { useI18n } from "@/lib/i18n";
 import { useGoBack } from "@/lib/nav";
 
@@ -17,6 +17,7 @@ const NOT_WEARABLE = /\b(backpack|bag|wallet|bracelet|necklace|ring|watch|earrin
 
 export default function ProductScreen() {
   const back = useGoBack();
+  const { inTelegram } = useTelegram(); // Telegram's own Back button is used there
   const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { find, products, categories } = useProducts();
@@ -53,7 +54,7 @@ export default function ProductScreen() {
             <Media product={product} className="flex-1" />
           </View>
           <View className="absolute inset-x-3 top-3 z-10 flex-row items-center justify-between md:hidden">
-            <Pressable onPress={back} accessibilityLabel={t("common.back")} className={circle}><Icon name="back" size={18} /></Pressable>
+            {inTelegram ? <View className="h-11 w-11" /> : <Pressable onPress={back} accessibilityLabel={t("common.back")} className={circle}><Icon name="back" size={18} /></Pressable>}
             <View className="flex-row gap-2">
               <Pressable onPress={() => setWish(!wish)} accessibilityLabel={t("product.wish")} className={circle}>
                 <Icon name="heart" size={18} color={wish ? "#e11d48" : "#374151"} fill={wish ? "#e11d48" : "none"} />

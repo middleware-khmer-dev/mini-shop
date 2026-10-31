@@ -1,6 +1,6 @@
 import { Redirect, router } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon, IconName } from "@/components/Icon";
 import { Media } from "@/components/ProductCard";
@@ -9,7 +9,8 @@ import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
 import { useProducts } from "@/lib/products";
 import { useAuth } from "@/lib/auth";
 import { money, useCart } from "@/lib/cart";
-import { useMainButton } from "@/lib/telegram";
+import { useMainButton, useTelegram, haptic } from "@/lib/telegram";
+import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
 import { useGoBack } from "@/lib/nav";
@@ -24,7 +25,7 @@ function OptionList({ options, value, onChange, prefix }: { options: readonly Op
         const on = o.id === value;
         return (
           <Pressable key={o.id} onPress={() => onChange(o.id)}>
-            <Glass strong={on} className={`flex-row items-center gap-3 rounded-2xl p-3 ${on ? "border-violet-500" : ""}`}>
+            <Glass strong={on} className={`flex-row items-center gap-3 rounded-2xl p-3 ${on ? "border-2 border-[#14141f]" : ""}`}>
               <View className={`h-10 w-10 items-center justify-center rounded-xl ${on ? "bg-[#14141f]" : "bg-white/70"}`}>
                 <Icon name={o.icon as IconName} size={18} color={on ? "#fff" : "#111"} />
               </View>
@@ -33,8 +34,8 @@ function OptionList({ options, value, onChange, prefix }: { options: readonly Op
                 <Text className="text-[12px] text-soft">{t(`${prefix}.${o.id}.sub`)}</Text>
               </View>
               {o.price != null ? <Text className="text-[13px] font-bold text-ink">{money(o.price)}</Text> : null}
-              <View className={`h-5 w-5 items-center justify-center rounded-full border-2 ${on ? "border-ink" : "border-gray-300"}`}>
-                {on ? <View className="h-2.5 w-2.5 rounded-full bg-ink" /> : null}
+              <View className={`h-5 w-5 items-center justify-center rounded-full ${on ? "bg-[#14141f]" : "border-2 border-gray-300"}`}>
+                {on ? <Icon name="check" size={12} color="#fff" /> : null}
               </View>
             </Glass>
           </Pressable>
@@ -48,6 +49,8 @@ const H = ({ children }: { children: string }) => <Text className="text-base fon
 
 export default function Checkout() {
   const back = useGoBack();
+  const { inTelegram } = useTelegram();
+  const [placing, setPlacing] = useState(false);
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
   const { session, ready } = useAuth();
@@ -57,10 +60,15 @@ export default function Checkout() {
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
   const total = subtotal + shipping;
   const placeOrder = () => {
-    clear();
-    router.replace({ pathname: "/success", params: { total: total.toFixed(2), pay } });
+    if (placing || lines.length === 0) return; // ignore double taps
+    setPlacing(true);
+    haptic("medium");
+    setTimeout(() => {
+      clear();
+      router.replace({ pathname: "/success", params: { total: total.toFixed(2), pay } });
+    }, 900);
   };
-  const native = useMainButton({ text: `${t("checkout.place")} · ${money(total)}`, onPress: placeOrder, visible: lines.length > 0 });
+  const native = useMainButton({ text: `${placing ? t("checkout.processing") : t("checkout.place")} · ${money(total)}`, onPress: placeOrder, visible: lines.length > 0, loading: placing });
   if (ready && !session) return <Redirect href="/login?redirect=/checkout" />;
   const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
 
@@ -68,9 +76,11 @@ export default function Checkout() {
     <>
       <Screen
         withActionBar={!native}
-        header={<Header title={t("checkout.title")} left={<Pressable onPress={back} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
+        header={<Header title={t("checkout.title")} left={inTelegram ? <View className="h-10 w-10" /> : <Pressable onPress={back} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
         contentClassName="gap-5 pt-4"
       >
+        <CheckoutSteps step={2} />
+
         <H>{t("checkout.address")}</H>
         <Glass strong className="flex-row items-start gap-3 rounded-2xl p-3">
           <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#14141f]"><Icon name="pin" size={18} color="#fff" /></View>
@@ -86,6 +96,7 @@ export default function Checkout() {
 
         <H>{t("checkout.payment")}</H>
         <OptionList prefix="pay" options={PAYMENT_OPTIONS} value={pay} onChange={setPay} />
+        <Text className="-mt-2 px-1 text-[12px] leading-5 text-soft">{t(`checkout.hint.${pay}`)}</Text>
 
         <H>{t("checkout.items")}</H>
         <Glass className="gap-3 rounded-2xl p-3">
@@ -112,6 +123,10 @@ export default function Checkout() {
           <View className="my-1 h-px bg-white/70" />
           <Row label={t("common.total")} value={money(total)} big />
         </Glass>
+        <View className="flex-row items-center justify-center gap-1.5 pb-1">
+          <Icon name="check" size={13} color="#16a34a" />
+          <Text className="text-[12px] text-soft">{t("checkout.secure")}</Text>
+        </View>
       </Screen>
 
       {!native ? (
@@ -121,11 +136,12 @@ export default function Checkout() {
           <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
         </View>
         <Pressable
-          disabled={lines.length === 0}
+          disabled={lines.length === 0 || placing}
           onPress={placeOrder}
-          className={`rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 ? "opacity-50" : ""}`}
+          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 || placing ? "opacity-70" : ""}`}
         >
-          <Text className="text-[14px] font-bold text-white">{t("checkout.place")}</Text>
+          {placing ? <ActivityIndicator color="#fff" size="small" /> : null}
+          <Text className="text-[14px] font-bold text-white">{placing ? t("checkout.processing") : t("checkout.place")}</Text>
         </Pressable>
       </ActionBar>
       ) : null}
