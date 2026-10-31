@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useMemo, useRef } from "react";
+import { usePathname } from "expo-router";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { Animated, NativeScrollEvent, NativeSyntheticEvent, Platform, useWindowDimensions } from "react-native";
 
 type NavCtx = {
@@ -40,6 +41,12 @@ export function NavProvider({ children }: { children: React.ReactNode }) {
     },
     [setHidden],
   );
+
+  const path = usePathname();
+  useEffect(() => {
+    state.current.lastY = 0;
+    setHidden(false);
+  }, [path, setHidden]);
 
   const value = useMemo(() => ({ hidden, onScroll, wide }), [hidden, onScroll, wide]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
