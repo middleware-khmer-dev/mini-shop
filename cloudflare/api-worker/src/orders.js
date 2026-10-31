@@ -1,5 +1,5 @@
 // Shop settings (set in the admin page): where the shop is, how far it delivers for cash, and the QR picture to pay to.
-export const DEFAULT_SETTINGS = { shop: { lat: 11.5564, lng: 104.9282 }, radiusKm: 25, qrImage: "" }; // Phnom Penh until set
+export const DEFAULT_SETTINGS = { shop: { lat: 11.5564, lng: 104.9282 }, radiusKm: 10, qrImage: "" }; // Phnom Penh until set
 
 export async function loadSettings(env) {
   try {

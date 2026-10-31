@@ -21,7 +21,7 @@ The app sends what is in the cart (product ids and quantities), the address, pho
 
 ### Payment rules
 - Two payment methods: **cash on delivery** and **QR**. Card is gone.
-- Cash only if the order has a map pin within the cash radius (default 25 km, a circle around the shop in every direction). Farther away, or with no pin, the customer must pay by QR. The server checks this when the order is placed (`cash_not_allowed`), and `POST /orders/quote` lets the app grey out cash in advance without revealing the shop's location.
+- Cash only if the order has a map pin within the cash radius (default 10 km, a circle around the shop in every direction). Farther away, or with no pin, the customer must pay by QR. The server checks this when the order is placed (`cash_not_allowed`), and `POST /orders/quote` lets the app grey out cash in advance without revealing the shop's location.
 - In the admin page, **Settings**: the shop's latitude and longitude, the radius, and a picture of the bank's KHQR. The customer sees that picture, with the amount, on the order page after choosing QR. **Until the shop location is set it defaults to the middle of Phnom Penh.**
 - Payment is not collected automatically: the admin sees the order, checks that the money arrived and sets the status.
 

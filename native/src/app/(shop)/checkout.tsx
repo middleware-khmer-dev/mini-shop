@@ -86,7 +86,7 @@ export default function Checkout() {
     !ORDERS_API ? ""
     : cash.state === "checking" ? t("pay.cash.checking")
     : cash.state === "error" ? t("pay.cash.error")
-    : cash.quote?.distanceKm == null ? t("pay.cash.nopin", { r: cash.quote?.radiusKm ?? 25 })
+    : cash.quote?.distanceKm == null ? t("pay.cash.nopin", { r: cash.quote?.radiusKm ?? 10 })
     : cash.quote.cashAllowed ? t("pay.cash.ok", { r: cash.quote.radiusKm, km: cash.quote.distanceKm })
     : t("pay.cash.far", { r: cash.quote.radiusKm, km: cash.quote.distanceKm });
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
