@@ -1,0 +1,14 @@
+name = "mini-shop-invoices"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[[kv_namespaces]]
+binding = "INVOICES"
+id = "5b7a967c15804b5b8a144caac10d4c82"
+
+# at most 20 uploads per minute per IP
+[[unsafe.bindings]]
+name = "LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }

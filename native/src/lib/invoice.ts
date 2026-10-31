@@ -258,17 +258,41 @@ function saveBlob(blob: Blob, filename: string) {
 export type DownloadKind = "pdf" | "png";
 
 export type DownloadResult =
+  | { via: "telegram" } // Telegram's own download dialog (file hosted for an hour on the invoice server)
   | { via: "download" } // normal browser: the file was saved
   | { via: "share" } // the system share sheet was shown (save to Files, send to a chat, ...)
   | { via: "viewer"; imageUrl: string; width: number; height: number }; // show the picture so it can be saved by hand
+
+type TgDownload = {
+  isVersionAtLeast?: (v: string) => boolean;
+  downloadFile?: (p: { url: string; file_name: string }, cb?: (accepted: boolean) => void) => void;
+};
+
+/** Where invoices are hosted for Telegram's downloadFile (see cloudflare/invoice-worker). Empty = not configured. */
+const INVOICE_API = (process.env.EXPO_PUBLIC_INVOICE_API ?? "").replace(/\/$/, "");
+
+/** Upload the PDF to the invoice server; resolves to its temporary https URL. */
+async function hostPdf(blob: Blob): Promise<string> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15_000);
+  try {
+    const res = await fetch(`${INVOICE_API}/invoice`, { method: "POST", headers: { "Content-Type": "application/pdf" }, body: blob, signal: ctl.signal });
+    const data = (await res.json()) as { url?: string };
+    if (!res.ok || !data.url) throw new Error("upload_failed");
+    return data.url;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /**
  * Get the invoice out of the app as a PDF or PNG.
  *
  * Inside Telegram the built-in browser usually ignores downloads of files the page generates
- * itself, and Telegram's own downloadFile needs a file hosted on an https server (there is none).
- * So inside Telegram we try the system share sheet with the real file, and if the client does not
- * offer one we hand back the picture to show full screen (press and hold to save, or screenshot).
+ * itself, and Telegram's own downloadFile needs the file on an https server. So for the PDF we
+ * upload it to the invoice server (if configured) and let Telegram download it from there. If that
+ * is not available or fails we try the system share sheet with the real file, and if the client
+ * offers none we hand back the picture to show full screen (press and hold to save, or screenshot).
  * In a normal browser the file is simply downloaded. On native it shares a text summary.
  */
 export async function downloadInvoice(
@@ -296,6 +320,19 @@ export async function downloadInvoice(
   const filename = `${name}.${kind}`;
 
   if (opts.inTelegram) {
+    const tg = (globalThis as unknown as { Telegram?: { WebApp?: TgDownload } }).Telegram?.WebApp;
+    if (kind === "pdf" && INVOICE_API && tg?.downloadFile && tg.isVersionAtLeast?.("8.0")) {
+      try {
+        const url = await hostPdf(blob);
+        await new Promise<void>((resolve) => {
+          tg.downloadFile!({ url, file_name: filename }, () => resolve());
+          setTimeout(resolve, 1500); // older clients may not call back
+        });
+        return { via: "telegram" };
+      } catch {
+        /* server unreachable: fall through to the share sheet / picture */
+      }
+    }
     const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
     try {
       const file = new File([blob], filename, { type: blob.type });
