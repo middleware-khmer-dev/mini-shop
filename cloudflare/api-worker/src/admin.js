@@ -18,6 +18,9 @@ textarea{min-height:90px}label{display:block;font-size:13px;font-weight:600;marg
 .imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:6px}
 .img{border:1px solid #e5e7eb;border-radius:12px;padding:6px;text-align:center;background:#fafafa}
 .img img{width:100%;height:90px;object-fit:contain}.img .gap{justify-content:center;margin-top:4px}.img button{padding:4px 9px}
+.chip{display:inline-block;border-radius:99px;font-size:12px;font-weight:700;padding:2px 10px;background:#e5e7eb}
+.chip.pending{background:#fef3c7;color:#92400e}.chip.confirmed{background:#dbeafe;color:#1e40af}.chip.shipped{background:#ede9fe;color:#5b21b6}.chip.delivered{background:#dcfce7;color:#166534}.chip.cancelled{background:#fee2e2;color:#991b1b}
+a{color:#2563eb}
 .badge{display:inline-block;background:#14141f;color:#fff;border-radius:99px;font-size:11px;padding:1px 8px;margin-bottom:2px}
 #msg{position:sticky;top:0;z-index:5;margin-bottom:8px;padding:10px 12px;border-radius:12px;display:none}
 #msg.ok{display:block;background:#dcfce7;color:#166534}#msg.err{display:block;background:#fee2e2;color:#991b1b}
@@ -88,6 +91,7 @@ export const ADMIN_JS = String.raw`
     clear();
     var bar = el("div", { class: "gap", style: "margin-bottom:12px" }, [
       el("button", { text: "+ Add product", onclick: function () { showEditor(null); } }),
+      el("button", { class: "ghost", text: "Orders", onclick: function () { showOrders(""); } }),
       el("button", { class: "ghost", text: "Import sample products", onclick: importSamples }),
       el("button", { class: "ghost", text: "Sign out", onclick: function () { sessionStorage.removeItem("ms_admin"); password = ""; showLogin(); } }),
     ]);
@@ -119,6 +123,71 @@ export const ADMIN_JS = String.raw`
       return chain;
     }).then(function () { return api("GET", "/products"); }).then(function (list) { products = list; showList(); say("Imported " + list.length + " products", true); })
       .catch(function (e) { say("Import failed: " + e.message); });
+  }
+
+  // ---------- orders ----------
+  var STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+  function when(iso) { var d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString(); }
+
+  function showOrders(filter) {
+    clear();
+    var bar = el("div", { class: "gap", style: "margin-bottom:12px" }, [el("button", { class: "ghost", text: "< Products", onclick: showList })]);
+    var sel = el("select", { style: "width:auto" }, [el("option", { value: "", text: "All orders" })].concat(STATUSES.map(function (s) { return el("option", { value: s, text: s }); })));
+    sel.value = filter;
+    sel.addEventListener("change", function () { showOrders(sel.value); });
+    bar.appendChild(sel);
+    bar.appendChild(el("button", { class: "ghost", text: "Refresh", onclick: function () { showOrders(sel.value); } }));
+    app.appendChild(bar);
+    api("GET", "/orders" + (filter ? "?status=" + encodeURIComponent(filter) : "")).then(function (orders) {
+      if (orders.length === 0) app.appendChild(el("div", { class: "card muted", text: "No orders yet." }));
+      orders.forEach(function (o) {
+        app.appendChild(el("div", { class: "card row", style: "cursor:pointer", onclick: function () { showOrder(o, filter); } }, [
+          el("div", { class: "grow" }, [
+            el("div", { class: "title", text: o.id + " · " + o.customer.name }),
+            el("div", { class: "muted", text: when(o.createdAt) + " · " + money(o.total) }),
+          ]),
+          el("span", { class: "chip " + o.status, text: o.status }),
+        ]));
+      });
+    }).catch(function (e) { say("Could not load orders: " + e.message); });
+  }
+
+  function showOrder(o, filter) {
+    clear();
+    var sel = el("select", {}, STATUSES.map(function (s) { return el("option", { value: s, text: s }); }));
+    sel.value = o.status;
+    var save = el("button", { text: "Save status", onclick: function () {
+      save.disabled = true;
+      api("PATCH", "/orders/" + o.id, { status: sel.value }).then(function (u) { say("Status: " + u.status, true); showOrder(u, filter); })
+        .catch(function (e) { save.disabled = false; say("Could not save: " + e.message); });
+    } });
+    var lines = o.items.map(function (i) {
+      return el("div", { class: "row", style: "justify-content:space-between;margin:4px 0" }, [
+        el("div", { class: "grow", text: i.name + (i.variant ? " (" + i.variant + ")" : "") + "  x" + i.qty }),
+        el("div", { text: money(i.price * i.qty) }),
+      ]);
+    });
+    var kids = [
+      el("div", { class: "row" }, [el("div", { class: "title grow", text: o.id }), el("span", { class: "chip " + o.status, text: o.status })]),
+      el("div", { class: "muted", text: when(o.createdAt) }),
+      el("label", { text: "Customer" }), el("div", { text: o.customer.name + " · " + o.customer.phone }),
+      el("label", { text: "Delivery address" }), el("div", { text: o.address }),
+    ];
+    if (o.location && isFinite(o.location.lat) && isFinite(o.location.lng)) {
+      var a = el("a", { target: "_blank", rel: "noopener noreferrer", text: "Open the pin on the map" });
+      a.href = "https://www.openstreetmap.org/?mlat=" + Number(o.location.lat) + "&mlon=" + Number(o.location.lng) + "#map=17/" + Number(o.location.lat) + "/" + Number(o.location.lng);
+      kids.push(el("div", { style: "margin-top:4px" }, [a]));
+    }
+    if (o.note) kids.push(el("label", { text: "Note from the customer" }), el("div", { text: o.note }));
+    kids.push(el("label", { text: "Items" }));
+    kids = kids.concat(lines);
+    kids.push(
+      el("div", { class: "muted", text: "Subtotal " + money(o.subtotal) + " · Shipping (" + o.shippingId + ") " + money(o.shipping) }),
+      el("div", { class: "title", style: "margin-top:4px", text: "Total " + money(o.total) + " · pay: " + o.payMethod }),
+      el("label", { text: "Status" }), sel,
+      el("div", { class: "gap", style: "margin-top:14px" }, [save, el("button", { class: "ghost", text: "Back", onclick: function () { showOrders(filter); } })]),
+    );
+    app.appendChild(el("div", { class: "card" }, kids));
   }
 
   // ---------- editor ----------

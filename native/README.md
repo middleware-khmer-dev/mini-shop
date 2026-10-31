@@ -54,3 +54,6 @@ Account → Delivery addresses (`/address`) is an address book: add as many as n
 
 ## Reviews
 On a product page, the Reviews tab lets a signed-in customer rate (1-5 stars) and comment; one review per customer per product, which they can edit or delete. Guests see a sign-in button. The product's rating and review count (also on the cards) combine the catalog's numbers with the reviews written here. Reviews are stored on the device (`mini_shop_reviews`), so other customers' devices do not see them until a backend is added.
+
+## Orders
+Pay now sends the order to our API (`EXPO_PUBLIC_ORDERS_API`, the same Worker as the products): the server prices it from its own product list, gives it the number and stores it. The customer's name and phone come from the signed-in account, the address from the address book, plus the note. The success page shows the live status (waiting for confirmation / confirmed / on the way / delivered / cancelled; tap it to refresh), which an admin sets in the admin page. If the server cannot be reached nothing is placed and an error is shown. Without `EXPO_PUBLIC_ORDERS_API` (local development) orders stay on the device only. Payment itself (KHQR / card) is still not collected.

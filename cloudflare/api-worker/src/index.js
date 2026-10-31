@@ -1,11 +1,14 @@
 // Mini Shop backend: the products API the app reads, plus a small admin site to manage products and pictures.
 //   GET  /products                 public   products in the same shape as fakestoreapi.com, plus `images`
 //   GET  /img/<id>                 public   a picture an admin uploaded
+//   POST /orders, GET /orders/<id> the shop app places an order / checks its status (see orders.js)
 //   GET  /admin                    the admin page (asks for the password)
 //   *    /admin/api/...            needs  Authorization: Bearer <ADMIN_PASSWORD>
-// Data: the product list is one KV key ("products"); the pictures are objects in an R2 bucket (binding IMAGES).
+// Data: the product list is one KV key ("products"); the pictures are objects in an R2 bucket (binding IMAGES);
+// orders are rows in a D1 database (binding DB).
 
 import { ADMIN_HTML, ADMIN_JS } from "./admin.js";
+import { adminOrders, publicOrders } from "./orders.js";
 
 const MAX_IMAGE_BYTES = 2_000_000;
 const MAX_PRODUCTS = 500;
@@ -116,6 +119,11 @@ async function admin(request, env, url) {
   const path = url.pathname.replace(/^\/admin\/api/, "");
   const origin = url.origin;
 
+  if (path === "/orders" || path.startsWith("/orders/")) {
+    const res = await adminOrders(request, env, path, url);
+    if (res) return res;
+  }
+
   if (request.method === "GET" && path === "/products") return reply(200, await loadProducts(env));
 
   if (request.method === "POST" && path === "/images") {
@@ -167,6 +175,8 @@ async function admin(request, env, url) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === "/orders" || url.pathname.startsWith("/orders/")) return publicOrders(request, env, url, loadProducts);
 
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: PUBLIC_CORS });
 
