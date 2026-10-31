@@ -13,7 +13,8 @@ import { haptic } from "@/lib/telegram";
 import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
-import { newOrderId, useOrders } from "@/lib/orders";
+import { Order, newOrderId, useOrders } from "@/lib/orders";
+import { ORDERS_API, OrderError, placeOrder as placeRemote } from "@/lib/api";
 import { useAddresses } from "@/lib/address";
 
 type Opt = { id: string; icon: string; price?: number };
@@ -57,35 +58,55 @@ export default function Checkout() {
   const { addOrder } = useOrders();
   const [ship, setShip] = useState<string>("standard");
   const [pay, setPay] = useState<string>("cod");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState("");
   const { addresses, selected, select } = useAddresses();
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
   const total = subtotal + shipping;
-  const placeOrder = () => {
+  const customer = { name: session?.user.name ?? "", phone: session?.user.phone ?? "" };
+
+  const placeOrder = async () => {
     if (placing || lines.length === 0 || !selected) return; // ignore double taps
     setPlacing(true);
+    setError("");
     haptic("medium");
-    setTimeout(() => {
-      // keep a snapshot of the order so the invoice can be shown and downloaded later
-      const id = newOrderId();
-      addOrder({
-        id,
-        createdAt: new Date().toISOString(),
-        items: lines.flatMap((l) => {
-          const p = findProduct(l.productId);
-          return p ? [{ productId: l.productId, name: p.name, price: p.price, qty: l.qty, variant: l.variant }] : [];
-        }),
-        subtotal,
-        shipping,
-        shippingId: ship,
-        total,
-        payMethod: pay,
-        customer: { name: t("checkout.name"), phone: "012 345 678" },
-        address: selected.address,
-        ...(selected.place ? { location: selected.place } : {}),
-      });
+    const base = {
+      shippingId: ship,
+      payMethod: pay,
+      customer,
+      address: selected.address,
+      note: note.trim(),
+      ...(selected.place ? { location: selected.place } : {}),
+    };
+    try {
+      let order: Order;
+      if (ORDERS_API) {
+        // the server works out the prices itself and gives the order its number
+        const placed = await placeRemote({ ...base, items: lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant })) });
+        order = { ...base, id: placed.id, createdAt: placed.createdAt, items: placed.items, subtotal: placed.subtotal, shipping: placed.shipping, total: placed.total, token: placed.token, status: placed.status };
+      } else {
+        // no server configured (local development): keep the order on this device only
+        order = {
+          ...base,
+          id: newOrderId(),
+          createdAt: new Date().toISOString(),
+          items: lines.flatMap((l) => {
+            const p = findProduct(l.productId);
+            return p ? [{ productId: l.productId, name: p.name, price: p.price, qty: l.qty, variant: l.variant }] : [];
+          }),
+          subtotal,
+          shipping,
+          total,
+        };
+      }
+      addOrder(order); // keep a copy so the invoice can be shown and downloaded later
       clear();
-      router.replace({ pathname: "/success", params: { id } });
-    }, 900);
+      router.replace({ pathname: "/success", params: { id: order.id } });
+    } catch (e) {
+      const code = e instanceof OrderError ? e.code : "network";
+      setError(t(["unknown_product", "bad_phone", "name_required", "network"].includes(code) ? `checkout.err.${code}` : "checkout.err.other"));
+      setPlacing(false);
+    }
   };
   if (ready && !session) return <Redirect href="/login?redirect=/checkout" />;
   
@@ -108,7 +129,7 @@ export default function Checkout() {
                   <Icon name="pin" size={18} color={on ? "#fff" : "#111"} />
                 </View>
                 <View className="flex-1 gap-0.5">
-                  <Text className="text-[13.5px] font-bold text-ink">{t(`address.label.${a.label}`)}  <Text className="font-normal text-soft">{t("checkout.name")} · 012 345 678</Text></Text>
+                  <Text className="text-[13.5px] font-bold text-ink">{t(`address.label.${a.label}`)}  <Text className="font-normal text-soft">{customer.name} · {customer.phone}</Text></Text>
                   <Text className="text-[12.5px] leading-5 text-soft">{a.address}</Text>
                 </View>
                 <View className={`h-5 w-5 items-center justify-center rounded-full ${on ? "bg-[#14141f]" : "border-2 border-gray-300"}`}>
@@ -147,7 +168,7 @@ export default function Checkout() {
         </Glass>
 
         <H>{t("checkout.note")}</H>
-        <TextInput multiline numberOfLines={2} placeholder={t("checkout.notePh")} placeholderTextColor="#a9adb8" className="min-h-[64px] rounded-2xl border border-glass-line bg-white/60 p-3 text-[13px] text-ink" />
+        <TextInput multiline numberOfLines={2} value={note} onChangeText={setNote} maxLength={500} placeholder={t("checkout.notePh")} placeholderTextColor="#a9adb8" className="min-h-[64px] rounded-2xl border border-glass-line bg-white/60 p-3 text-[13px] text-ink" />
 
         <Glass strong className="gap-2.5 rounded-3xl p-4">
           <Row label={t("cart.subtotal")} value={money(subtotal)} />
@@ -155,6 +176,11 @@ export default function Checkout() {
           <View className="my-1 h-px bg-white/70" />
           <Row label={t("common.total")} value={money(total)} big />
         </Glass>
+        {error ? (
+          <View className="rounded-2xl border border-red-200 bg-red-50 p-3">
+            <Text className="text-[13px] leading-5 text-red-700">{error}</Text>
+          </View>
+        ) : null}
         <View className="flex-row items-center justify-center gap-1.5 pb-1">
           <Icon name="check" size={13} color="#16a34a" />
           <Text className="text-[12px] text-soft">{t("checkout.secure")}</Text>

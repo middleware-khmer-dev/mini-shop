@@ -16,11 +16,14 @@ export type Order = {
   customer: { name: string; phone: string };
   address: string;
   location?: { lat: number; lng: number }; // where the customer dropped the pin, if they did
+  note?: string;
+  token?: string; // secret that lets this device ask the server for the order status
+  status?: string; // pending | confirmed | shipped | delivered | cancelled (from the server)
 };
 
 const KEY = "mini_shop_orders";
 
-type Ctx = { orders: Order[]; addOrder: (o: Order) => void; find: (id?: string) => Order | undefined };
+type Ctx = { orders: Order[]; addOrder: (o: Order) => void; setStatus: (id: string, status: string) => void; find: (id?: string) => Order | undefined };
 const OrdersCtx = createContext<Ctx | null>(null);
 
 export const newOrderId = () => `MS${Math.floor(100000 + Math.random() * 900000)}`;
@@ -46,9 +49,10 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   }, [orders]);
 
   const addOrder = useCallback((o: Order) => setOrders((prev) => [o, ...prev]), []);
+  const setStatus = useCallback((id: string, status: string) => setOrders((prev) => prev.map((o) => (o.id === id && o.status !== status ? { ...o, status } : o))), []);
   const value = useMemo<Ctx>(
-    () => ({ orders, addOrder, find: (id) => orders.find((o) => o.id === id) }),
-    [orders, addOrder],
+    () => ({ orders, addOrder, setStatus, find: (id) => orders.find((o) => o.id === id) }),
+    [orders, addOrder, setStatus],
   );
   return <OrdersCtx.Provider value={value}>{children}</OrdersCtx.Provider>;
 }

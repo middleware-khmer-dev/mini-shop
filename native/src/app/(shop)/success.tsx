@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Icon } from "@/components/Icon";
 import { Screen } from "@/components/Screen";
@@ -8,6 +8,7 @@ import { DownloadKind, InvoiceLabels, downloadInvoice } from "@/lib/invoice";
 import { useTelegram } from "@/lib/telegram";
 import { Order, OrderItem, useOrders } from "@/lib/orders";
 import { money } from "@/lib/cart";
+import { ORDERS_API, fetchOrderStatus } from "@/lib/api";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const formatDate = (iso: string) => {
@@ -41,12 +42,19 @@ function labelsFor(order: Order, t: (k: string) => string, _lang: Lang): Invoice
 export default function Invoice() {
   const { t, lang } = useI18n();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { find } = useOrders();
+  const { find, setStatus } = useOrders();
   const { inTelegram } = useTelegram();
   const [viewer, setViewer] = useState<{ imageUrl: string; width: number; height: number } | null>(null);
   const order = find(id);
   const [busy, setBusy] = useState<DownloadKind | null>(null);
   const [failed, setFailed] = useState(false);
+  const token = order?.token;
+  // ask the server where the order is now (confirmed, shipped, ...)
+  const refreshStatus = () => {
+    if (!ORDERS_API || !order || !token) return;
+    fetchOrderStatus(order.id, token).then((s) => setStatus(order.id, s.status)).catch(() => {});
+  };
+  useEffect(refreshStatus, [order?.id, token]);
 
   if (!order) {
     return (
@@ -79,6 +87,12 @@ export default function Invoice() {
       <View className="items-center gap-2">
         <View className="h-14 w-14 items-center justify-center rounded-full bg-green-500"><Icon name="check" size={28} color="#fff" /></View>
         <Text className="text-xl font-extrabold text-ink">{t("success.title")}</Text>
+        {order.status ? (
+          <Pressable onPress={refreshStatus} accessibilityLabel={t("order.refresh")} className="flex-row items-center gap-2 rounded-full bg-white/80 px-4 py-1.5">
+            <Text className="text-[12.5px] text-soft">{t("order.status")}</Text>
+            <Text className="text-[13px] font-bold text-ink">{t(`order.s.${order.status}`, { fallback: order.status })}</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {/* the invoice, laid out like a paper receipt */}
