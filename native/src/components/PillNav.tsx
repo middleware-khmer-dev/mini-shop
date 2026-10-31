@@ -11,7 +11,7 @@ const TABS: { key: string; label: string; href: string; icon: IconName; match: s
   { key: "home", label: "nav.home", href: "/home", icon: "home", match: ["/home"] },
   { key: "catalog", label: "nav.catalog", href: "/catalog", icon: "grid", match: ["/catalog", "/product"] },
   { key: "cart", label: "nav.cart", href: "/cart", icon: "cart", match: ["/cart", "/checkout", "/success"] },
-  { key: "profile", label: "nav.profile", href: "/profile", icon: "user", match: ["/profile", "/favorites"] },
+  { key: "profile", label: "nav.profile", href: "/profile", icon: "user", match: ["/profile", "/favorites", "/address"] },
 ];
 
 /**

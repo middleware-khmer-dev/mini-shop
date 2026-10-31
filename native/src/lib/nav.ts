@@ -4,7 +4,7 @@ import { router, usePathname } from "expo-router";
 export function fallbackFor(path: string): string {
   if (path.startsWith("/product")) return "/catalog";
   if (path.startsWith("/checkout")) return "/cart";
-  if (path.startsWith("/favorites")) return "/profile";
+  if (path.startsWith("/favorites") || path.startsWith("/address")) return "/profile";
   if (path.startsWith("/success")) return "/home";
   return "/home";
 }

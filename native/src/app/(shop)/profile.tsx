@@ -22,6 +22,15 @@ export default function Profile() {
           <Text className="text-[13px] text-soft">{session ? session.user.phone : t("profile.loginHint")}</Text>
         </View>
       </Glass>
+      <Pressable onPress={() => router.push("/address")}>
+        <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
+          <View className="flex-row items-center gap-3">
+            <Icon name="pin" size={18} color="#14141f" />
+            <Text className="text-[14px] font-bold text-ink">{t("address.title")}</Text>
+          </View>
+          <Text className="text-[13px] text-soft">{t("checkout.change")}</Text>
+        </Glass>
+      </Pressable>
       <Pressable onPress={() => router.push("/favorites")}>
         <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
           <View className="flex-row items-center gap-3">
