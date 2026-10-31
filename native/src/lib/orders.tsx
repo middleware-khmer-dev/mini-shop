@@ -15,6 +15,7 @@ export type Order = {
   payMethod: string; // cod | khqr | card
   customer: { name: string; phone: string };
   address: string;
+  location?: { lat: number; lng: number }; // where the customer dropped the pin, if they did
 };
 
 const KEY = "mini_shop_orders";

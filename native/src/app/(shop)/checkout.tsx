@@ -1,8 +1,10 @@
 import { Redirect, router } from "expo-router";
-import React, { useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon, IconName } from "@/components/Icon";
+import { MapPicker } from "@/components/MapPicker";
 import { Media } from "@/components/ProductCard";
 import { ActionBar, Screen } from "@/components/Screen";
 import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
@@ -14,6 +16,9 @@ import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
 import { newOrderId, useOrders } from "@/lib/orders";
+import type { Place } from "@/lib/geo";
+
+const ADDRESS_KEY = "mini_shop_address";
 
 type Opt = { id: string; icon: string; price?: number };
 
@@ -56,6 +61,19 @@ export default function Checkout() {
   const { addOrder } = useOrders();
   const [ship, setShip] = useState<string>("standard");
   const [pay, setPay] = useState<string>("cod");
+  // delivery address: typed in or picked on the map; remembered for next time
+  const [address, setAddress] = useState("");
+  const [place, setPlace] = useState<Place | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem(ADDRESS_KEY)
+      .then((raw) => {
+        const s = raw ? (JSON.parse(raw) as { address?: string; place?: Place | null }) : null;
+        if (s?.address) setAddress((now) => now || s.address!);
+        if (s?.place) setPlace((now) => now ?? s.place!);
+      })
+      .catch(() => {});
+  }, []);
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
   const total = subtotal + shipping;
   const placeOrder = () => {
@@ -78,8 +96,10 @@ export default function Checkout() {
         total,
         payMethod: pay,
         customer: { name: t("checkout.name"), phone: "012 345 678" },
-        address: t("checkout.addressText"),
+        address: address.trim() || t("checkout.addressText"),
+        ...(place ? { location: place } : {}),
       });
+      AsyncStorage.setItem(ADDRESS_KEY, JSON.stringify({ address: address.trim(), place })).catch(() => {});
       clear();
       router.replace({ pathname: "/success", params: { id } });
     }, 900);
@@ -96,13 +116,39 @@ export default function Checkout() {
         <CheckoutSteps step={2} />
 
         <H>{t("checkout.address")}</H>
-        <Glass strong className="flex-row items-start gap-3 rounded-2xl p-3">
-          <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#14141f]"><Icon name="pin" size={18} color="#fff" /></View>
-          <View className="flex-1 gap-1">
-            <Text className="text-[13.5px] font-bold text-ink">{t("checkout.name")}  <Text className="font-normal text-soft">012 345 678</Text></Text>
-            <Text className="text-[12.5px] text-soft">{t("checkout.addressText")}</Text>
+        <Glass strong className="gap-3 rounded-2xl p-3">
+          <View className="flex-row items-start gap-3">
+            <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#14141f]"><Icon name="pin" size={18} color="#fff" /></View>
+            <View className="flex-1 gap-1">
+              <Text className="text-[13.5px] font-bold text-ink">{t("checkout.name")}  <Text className="font-normal text-soft">012 345 678</Text></Text>
+              <TextInput
+                multiline
+                value={address}
+                onChangeText={setAddress}
+                placeholder={t("checkout.addressText")}
+                placeholderTextColor="#a9adb8"
+                style={{ outlineStyle: "none", outlineWidth: 0 } as never}
+                className="min-h-[40px] text-[12.5px] leading-5 text-ink"
+              />
+            </View>
           </View>
-          <Text className="text-[12px] font-bold text-ink">{t("checkout.change")}</Text>
+          {Platform.OS === "web" ? (
+            <>
+              <Pressable onPress={() => setMapOpen(!mapOpen)} className="flex-row items-center justify-center gap-2 rounded-xl border border-glass-line bg-white/70 py-2.5">
+                <Icon name="pin" size={15} color="#14141f" />
+                <Text className="text-[12.5px] font-bold text-ink">{mapOpen ? t("map.close") : place ? t("map.change") : t("map.pick")}</Text>
+              </Pressable>
+              {mapOpen ? (
+                <MapPicker
+                  value={place}
+                  onChange={(p, a) => {
+                    setPlace(p);
+                    if (a) setAddress(a);
+                  }}
+                />
+              ) : null}
+            </>
+          ) : null}
         </Glass>
 
         <H>{t("checkout.shipping")}</H>

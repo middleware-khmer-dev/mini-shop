@@ -36,7 +36,7 @@ export function Icon({ name, size = 20, color = "#111", fill = "none" }: Props) 
     case "cash": body = (<><Rect x="2" y="6" width="20" height="12" rx="2" {...p} /><Circle cx="12" cy="12" r="2.6" {...p} /></>); break;
     case "qr": body = (<><Rect x="3" y="3" width="7" height="7" rx="1" {...p} /><Rect x="14" y="3" width="7" height="7" rx="1" {...p} /><Rect x="3" y="14" width="7" height="7" rx="1" {...p} /><Path d="M14 14h3v3h-3zM20 14v7M14 20h3" {...p} /></>); break;
     case "card": body = (<><Rect x="2" y="5" width="20" height="14" rx="2" {...p} /><Path d="M2 10h20" {...p} /></>); break;
-    case "pin": body = (<><Path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z" {...p} /><Circle cx="12" cy="10" r="2.5" {...p} /></>); break;
+    case "pin": body = (<><Path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z" {...p} fill={fill} /><Circle cx="12" cy="10" r="2.5" {...p} /></>); break;
     case "check": body = <Path d="m5 12 5 5 9-10" {...p} />; break;
     case "download": body = <Path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" {...p} />; break;
     case "image": body = (<><Rect x="3" y="4" width="18" height="16" rx="2" {...p} /><Circle cx="9" cy="10" r="1.6" {...p} /><Path d="m21 16-5-5-9 9" {...p} /></>); break;

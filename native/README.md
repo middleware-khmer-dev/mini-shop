@@ -43,3 +43,6 @@ With `EXPO_PUBLIC_INVOICE_API` set (it is, in the Pages workflow), the PDF butto
 
 ## Favorites
 The heart on a product card or the product page toggles a favorite (saved in `mini_shop_favorites`, survives reopening the app). Account → Favorites lists them at `/favorites`.
+
+## Map (delivery address)
+Checkout has a real OpenStreetMap map (Leaflet, web build only; no API key). "Pick on map" opens it with a fixed pin: drag the map, search a place (Nominatim, Cambodia only) or tap the location button. The street address is looked up after the map stops moving and fills the address box, which can also be typed. The address and pin are saved on the order (`location`) and remembered for next time (`mini_shop_address`). Tiles and address lookup come from OpenStreetMap's free public servers, which are meant for light use; for heavy traffic use a paid tile/geocoding provider.
