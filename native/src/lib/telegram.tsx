@@ -1,4 +1,5 @@
-import { usePathname, router } from "expo-router";
+import { usePathname } from "expo-router";
+import { goBack } from "@/lib/nav";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
@@ -134,7 +135,7 @@ export function TelegramBackButton() {
   useEffect(() => {
     const tg = getWebApp();
     if (!inTelegram || !tg?.BackButton) return;
-    const back = () => (router.canGoBack() ? router.back() : router.replace("/home"));
+    const back = () => goBack(path);
     if (atRoot) {
       tg.BackButton.hide();
       return;

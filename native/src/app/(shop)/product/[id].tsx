@@ -9,12 +9,14 @@ import { useProducts } from "@/lib/products";
 import { money, useCart } from "@/lib/cart";
 import { haptic } from "@/lib/telegram";
 import { useI18n } from "@/lib/i18n";
+import { useGoBack } from "@/lib/nav";
 
 const SIZES = ["S", "M", "L", "XL"];
 // The API files some bags/accessories under "clothing"; those have no sizes
 const NOT_WEARABLE = /\b(backpack|bag|wallet|bracelet|necklace|ring|watch|earring)s?\b/i;
 
 export default function ProductScreen() {
+  const back = useGoBack();
   const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { find, products, categories } = useProducts();
@@ -51,7 +53,7 @@ export default function ProductScreen() {
             <Media product={product} className="flex-1" />
           </View>
           <View className="absolute inset-x-3 top-3 z-10 flex-row items-center justify-between md:hidden">
-            <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={circle}><Icon name="back" size={18} /></Pressable>
+            <Pressable onPress={back} accessibilityLabel={t("common.back")} className={circle}><Icon name="back" size={18} /></Pressable>
             <View className="flex-row gap-2">
               <Pressable onPress={() => setWish(!wish)} accessibilityLabel={t("product.wish")} className={circle}>
                 <Icon name="heart" size={18} color={wish ? "#e11d48" : "#374151"} fill={wish ? "#e11d48" : "none"} />

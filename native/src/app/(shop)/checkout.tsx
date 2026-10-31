@@ -12,6 +12,7 @@ import { money, useCart } from "@/lib/cart";
 import { useMainButton } from "@/lib/telegram";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
+import { useGoBack } from "@/lib/nav";
 
 type Opt = { id: string; icon: string; price?: number };
 
@@ -46,6 +47,7 @@ function OptionList({ options, value, onChange, prefix }: { options: readonly Op
 const H = ({ children }: { children: string }) => <Text className="text-base font-bold text-ink">{children}</Text>;
 
 export default function Checkout() {
+  const back = useGoBack();
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
   const { session, ready } = useAuth();
@@ -66,7 +68,7 @@ export default function Checkout() {
     <>
       <Screen
         withActionBar={!native}
-        header={<Header title={t("checkout.title")} left={<Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
+        header={<Header title={t("checkout.title")} left={<Pressable onPress={back} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
         contentClassName="gap-5 pt-4"
       >
         <H>{t("checkout.address")}</H>

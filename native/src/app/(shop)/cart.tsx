@@ -11,8 +11,10 @@ import { useAuth } from "@/lib/auth";
 import { useMainButton } from "@/lib/telegram";
 import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
+import { useGoBack } from "@/lib/nav";
 
 export default function Cart() {
+  const back = useGoBack();
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
   const { session } = useAuth();
@@ -32,7 +34,7 @@ export default function Cart() {
         header={
           <Header
             title={t("cart.title", { n: count })}
-            left={<Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
+            left={<Pressable onPress={back} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
             right={<Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className={hBtn}><Icon name="trash" size={18} color="#fff" /></Pressable>}
           />
         }
