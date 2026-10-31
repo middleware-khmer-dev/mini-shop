@@ -5,6 +5,8 @@
 
 const ALLOWED_ORIGINS = ["https://middleware-khmer-dev.github.io"];
 const MAX_BYTES = 1_500_000; // an invoice PDF is ~130 KB
+const TYPES = { pdf: "application/pdf", png: "image/png" };
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47];
 const TTL_SECONDS = 3600;
 
 const cors = (origin) =>
@@ -43,22 +45,25 @@ export default {
       if (declared > MAX_BYTES) return json(413, { error: "too_large" }, origin);
       const body = await request.arrayBuffer();
       if (body.byteLength > MAX_BYTES) return json(413, { error: "too_large" }, origin);
-      const head = new TextDecoder().decode(body.slice(0, 5));
-      if (head !== "%PDF-") return json(400, { error: "not_a_pdf" }, origin);
+      const bytes = new Uint8Array(body.slice(0, 5));
+      const isPdf = new TextDecoder().decode(bytes) === "%PDF-";
+      const isPng = PNG_MAGIC.every((b, i) => bytes[i] === b);
+      if (!isPdf && !isPng) return json(400, { error: "not_a_pdf_or_png" }, origin);
+      const ext = isPdf ? "pdf" : "png";
 
       const id = hex(crypto.getRandomValues(new Uint8Array(16)));
-      await env.INVOICES.put(id, body, { expirationTtl: TTL_SECONDS });
-      return json(200, { url: `${url.origin}/invoice/${id}.pdf`, expiresIn: TTL_SECONDS }, origin);
+      await env.INVOICES.put(`${id}.${ext}`, body, { expirationTtl: TTL_SECONDS });
+      return json(200, { url: `${url.origin}/invoice/${id}.${ext}`, expiresIn: TTL_SECONDS }, origin);
     }
 
-    const m = url.pathname.match(/^\/invoice\/([a-f0-9]{32})\.pdf$/);
+    const m = url.pathname.match(/^\/invoice\/([a-f0-9]{32})\.(pdf|png)$/);
     if (request.method === "GET" && m) {
-      const file = await env.INVOICES.get(m[1], "arrayBuffer");
+      const file = await env.INVOICES.get(`${m[1]}.${m[2]}`, "arrayBuffer");
       if (!file) return json(404, { error: "not_found_or_expired" }, origin);
       return new Response(file, {
         headers: {
-          "content-type": "application/pdf",
-          "content-disposition": 'attachment; filename="invoice.pdf"',
+          "content-type": TYPES[m[2]],
+          "content-disposition": `attachment; filename="invoice.${m[2]}"`,
           "cache-control": "private, no-store",
           "x-content-type-options": "nosniff",
           ...cors(origin),
