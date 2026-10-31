@@ -37,8 +37,35 @@ type WebApp = {
 const getWebApp = (): WebApp | undefined =>
   Platform.OS === "web" ? (globalThis as unknown as { Telegram?: { WebApp?: WebApp } }).Telegram?.WebApp : undefined;
 
-/** The SDK object also exists in plain browsers; only a non-empty platform/initData means real Telegram. */
-const isRealTelegram = (tg?: WebApp) => !!tg && (!!tg.initData || (!!tg.platform && tg.platform !== "unknown"));
+/**
+ * Telegram passes its launch data in the URL hash (#tgWebAppData=...&tgWebAppPlatform=...). The SDK
+ * script is loaded after the app starts, and the router rewrites the URL (/ to /home) by then, so the
+ * hash would be gone and the SDK would report platform "unknown". Capture it here, when this module
+ * is first evaluated (before any routing), and store it where the SDK looks for it.
+ */
+const LAUNCHED_FROM_TELEGRAM = (() => {
+  if (Platform.OS !== "web" || typeof window === "undefined") return false;
+  try {
+    const hash = window.location.hash.replace(/^#/, "");
+    const key = "__telegram__initParams";
+    if (/tgWebApp(Data|Platform|Version)=/.test(hash)) {
+      const params: Record<string, string> = {};
+      for (const part of hash.split("&")) {
+        const i = part.indexOf("=");
+        if (i > 0) params[decodeURIComponent(part.slice(0, i))] = decodeURIComponent(part.slice(i + 1));
+      }
+      window.sessionStorage.setItem(key, JSON.stringify(params));
+      return true;
+    }
+    return !!window.sessionStorage.getItem(key) || !!(window as unknown as { TelegramWebviewProxy?: unknown }).TelegramWebviewProxy;
+  } catch {
+    return false;
+  }
+})();
+
+/** The SDK object also exists in plain browsers; real Telegram = launched with Telegram's launch data. */
+const isRealTelegram = (tg?: WebApp) =>
+  !!tg && (LAUNCHED_FROM_TELEGRAM || !!tg.initData || (!!tg.platform && tg.platform !== "unknown"));
 
 function loadScript(): Promise<void> {
   return new Promise((resolve) => {
