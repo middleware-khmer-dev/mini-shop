@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { ProductCard } from "@/components/ProductCard";
-import { Header, Screen } from "@/components/Screen";
+import { Screen } from "@/components/Screen";
 import { StatusBanner } from "@/components/StatusBanner";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
@@ -40,16 +40,7 @@ export default function Catalog() {
   const chips = [{ id: "all", label: t("common.all") }, ...categories.map((c) => ({ id: c.id, label: t(`cat.${c.id}`, { fallback: c.id }) }))];
 
   return (
-    <Screen
-      header={
-        <Header
-          title={t("catalog.title")}
-          left={<View className="h-10 w-10" />}
-          right={<View className="h-10 w-10" />}
-        />
-      }
-      contentClassName="gap-4 pt-4"
-    >
+    <Screen title={t("catalog.title")} contentClassName="gap-4 pt-2">
       <Glass strong className="flex-row items-center gap-2 rounded-full px-4">
         <Icon name="search" size={16} color="#6b7280" />
         <TextInput

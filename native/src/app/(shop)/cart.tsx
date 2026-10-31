@@ -4,11 +4,10 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { Media } from "@/components/ProductCard";
-import { ActionBar, Header, Screen } from "@/components/Screen";
+import { ActionBar, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { Row } from "@/components/Row";
 import { useAuth } from "@/lib/auth";
-import { useMainButton } from "@/lib/telegram";
 import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
@@ -22,23 +21,9 @@ export default function Cart() {
   const [applied, setApplied] = useState(false);
   const total = subtotal + SHIPPING_DEFAULT;
   const goPay = () => (session ? router.push("/checkout") : router.push({ pathname: "/login", params: { redirect: "/checkout" } }));
-  // In Telegram the big Main button does the paying; the in-page bar is hidden
-  const native = useMainButton({ text: `${session ? t("cart.pay") : t("cart.signInToPay")} · ${money(total)}`, onPress: goPay, visible: lines.length > 0 });
-  const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
-
   return (
     <>
-      <Screen
-        withActionBar={lines.length > 0 && !native}
-        header={
-          <Header
-            title={t("cart.title", { n: count })}
-            left={<View className="h-10 w-10" />}
-            right={<Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className={hBtn}><Icon name="trash" size={18} color="#fff" /></Pressable>}
-          />
-        }
-        contentClassName="gap-4 pt-4"
-      >
+      <Screen title={t("cart.title", { n: count })} withActionBar={lines.length > 0} contentClassName="gap-4 pt-2">
         {lines.length === 0 ? (
           <View className="items-center gap-2 py-20">
             <Icon name="cart" size={44} color="#9ca3af" />
@@ -50,6 +35,10 @@ export default function Cart() {
         ) : (
           <>
             <CheckoutSteps step={1} />
+            <Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className="flex-row items-center gap-1.5 self-end rounded-full bg-white/60 px-3 py-1.5">
+              <Icon name="trash" size={14} color="#6b7280" />
+              <Text className="text-[12px] font-semibold text-soft">{t("cart.clear")}</Text>
+            </Pressable>
             {lines.map((l) => {
               const p = findProduct(l.productId);
               if (!p) return null;
@@ -93,7 +82,7 @@ export default function Cart() {
         )}
       </Screen>
 
-      {lines.length > 0 && !native ? (
+      {lines.length > 0 ? (
         <ActionBar>
           <View className="flex-1">
             <Text className="text-[11px] text-soft">{t("common.totalAll")}</Text>

@@ -1,27 +1,20 @@
 import { usePathname } from "expo-router";
 import { goBack } from "@/lib/nav";
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { Platform } from "react-native";
 
-type Insets = { top: number; bottom: number };
+/** top = deviceTop + controlsH; deviceTop = status bar; controlsH = row used by Telegram's Close/Back/menu buttons */
+type Insets = { top: number; bottom: number; deviceTop: number; controlsH: number };
 /** `inTelegram`: running inside the real Telegram client (not a normal browser that merely loaded the SDK) */
 type TgCtx = { inTelegram: boolean; insets: Insets };
 
-const Ctx = createContext<TgCtx>({ inTelegram: false, insets: { top: 0, bottom: 0 } });
+const Ctx = createContext<TgCtx>({ inTelegram: false, insets: { top: 0, bottom: 0, deviceTop: 0, controlsH: 0 } });
 
 type Btn = {
   show: () => void;
   hide: () => void;
   onClick: (cb: () => void) => void;
   offClick: (cb: () => void) => void;
-};
-type MainBtn = Btn & {
-  setText: (t: string) => void;
-  setParams: (p: { color?: string; text_color?: string; is_active?: boolean; is_visible?: boolean }) => void;
-  enable: () => void;
-  disable: () => void;
-  showProgress?: (leaveActive?: boolean) => void;
-  hideProgress?: () => void;
 };
 type WebApp = {
   initData?: string;
@@ -33,7 +26,6 @@ type WebApp = {
   onEvent: (e: string, cb: () => void) => void;
   offEvent: (e: string, cb: () => void) => void;
   BackButton?: Btn;
-  MainButton?: MainBtn;
   HapticFeedback?: { impactOccurred: (s: "light" | "medium" | "heavy") => void; notificationOccurred: (s: "success" | "error" | "warning") => void };
 };
 
@@ -87,7 +79,7 @@ function loadScript(): Promise<void> {
  * controls (Close / menu, shown over the app in fullscreen) so headers can sit below them.
  */
 export function TelegramProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<TgCtx>({ inTelegram: false, insets: { top: 0, bottom: 0 } });
+  const [state, setState] = useState<TgCtx>({ inTelegram: false, insets: { top: 0, bottom: 0, deviceTop: 0, controlsH: 0 } });
 
   useEffect(() => {
     let tg: WebApp | undefined;
@@ -97,7 +89,12 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
       const ca = tg.contentSafeAreaInset ?? {};
       setState({
         inTelegram: isRealTelegram(tg),
-        insets: { top: (sa.top ?? 0) + (ca.top ?? 0), bottom: (sa.bottom ?? 0) + (ca.bottom ?? 0) },
+        insets: {
+          top: (sa.top ?? 0) + (ca.top ?? 0),
+          bottom: (sa.bottom ?? 0) + (ca.bottom ?? 0),
+          deviceTop: sa.top ?? 0,
+          controlsH: ca.top ?? 0,
+        },
       });
     };
     loadScript().then(() => {
@@ -150,42 +147,4 @@ export function TelegramBackButton() {
   }, [inTelegram, atRoot, path]);
 
   return null;
-}
-
-/**
- * Telegram's Main button (big button at the bottom of the Mini App). Returns true when it is
- * in use, so the screen can hide its own in-page equivalent.
- */
-export function useMainButton(opts: { text: string; onPress: () => void; visible?: boolean; disabled?: boolean; loading?: boolean }) {
-  const { inTelegram } = useTelegram();
-  const { text, onPress, visible = true, disabled = false, loading = false } = opts;
-  const pressRef = useRef(onPress);
-  pressRef.current = onPress;
-
-  useEffect(() => {
-    const tg = getWebApp();
-    const mb = tg?.MainButton;
-    if (!inTelegram || !mb) return;
-    if (!visible) {
-      mb.hide();
-      return;
-    }
-    const handler = () => pressRef.current();
-    mb.setParams({ color: "#14141f", text_color: "#ffffff" });
-    mb.setText(text);
-    if (disabled || loading) mb.disable();
-    else mb.enable();
-    // spinner on the button while the order is being placed (also blocks double taps)
-    if (loading) mb.showProgress?.(true);
-    else mb.hideProgress?.();
-    mb.show();
-    mb.onClick(handler);
-    return () => {
-      mb.offClick(handler);
-      mb.hideProgress?.();
-      mb.hide();
-    };
-  }, [inTelegram, text, visible, disabled, loading]);
-
-  return inTelegram && visible;
 }

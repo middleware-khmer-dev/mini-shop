@@ -1,12 +1,29 @@
-import React, { useState } from "react";
+import React from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTelegram } from "@/lib/telegram";
 import { Glass } from "./Glass";
 import { NAV_HEIGHT, PILL_BOTTOM_SPACE, useBottomInset, useNav } from "./nav-context";
 
+const PILL_H = 34;
+
+/**
+ * Space taken at the top of a page. Inside Telegram (fullscreen) Telegram draws its Back / Close /
+ * menu buttons in a row at the top; the page title sits in that same row, centered between them.
+ */
+function useTopArea() {
+  const insets = useSafeAreaInsets();
+  const { insets: tg } = useTelegram();
+  if (tg.controlsH > 0) {
+    return { pillTop: tg.deviceTop + Math.max(0, (tg.controlsH - PILL_H) / 2), contentTop: tg.deviceTop + tg.controlsH + 10 };
+  }
+  const top = Math.max(insets.top, tg.deviceTop) + 10;
+  return { pillTop: top, contentTop: top + PILL_H + 10 };
+}
+
 type Props = {
-  header?: React.ReactNode;
+  /** page title, shown as a small glass label at the top, centered */
+  title?: string;
   children: React.ReactNode;
   /** extra bottom space when a sticky action bar is shown */
   withActionBar?: boolean;
@@ -14,42 +31,45 @@ type Props = {
 };
 
 /** Scrollable page: reports scroll to the nav (hide/show) and leaves room for it. */
-export function Screen({ header, children, withActionBar, contentClassName = "" }: Props) {
+export function Screen({ title, children, withActionBar, contentClassName = "" }: Props) {
   const { onScroll, wide, hidden } = useNav();
   const insets = useSafeAreaInsets();
-  const tg = useTelegram();
-  const [headerH, setHeaderH] = useState(0);
-  const topPad = wide ? NAV_HEIGHT : header ? 0 : Math.max(insets.top, tg.insets.top);
-  // Phone/Telegram: the header floats over the content and slides away with the nav
-  const floating = !!header && !wide;
-  const headerY = hidden.interpolate({ inputRange: [0, 1], outputRange: [0, -(headerH + 12)] });
+  const { pillTop, contentTop } = useTopArea();
+  const pillY = hidden.interpolate({ inputRange: [0, 1], outputRange: [0, -(pillTop + PILL_H + 16)] });
+
+  const pill = title ? (
+    <Glass strong intensity={60} className="h-[34px] max-w-[210px] justify-center rounded-full px-4">
+      <Text numberOfLines={1} className="text-center text-[14px] font-bold text-ink">{title}</Text>
+    </Glass>
+  ) : null;
+
   return (
-    <View className="flex-1" style={{ paddingTop: topPad }}>
-      {header ? (
+    <View className="flex-1" style={{ paddingTop: wide ? NAV_HEIGHT : 0 }}>
+      {pill && !wide ? (
         <Animated.View
-          onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
-          style={floating ? { position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, transform: [{ translateY: headerY }] } : undefined}
+          pointerEvents="none"
+          style={{ position: "absolute", top: pillTop, left: 0, right: 0, zIndex: 30, alignItems: "center", transform: [{ translateY: pillY }] }}
         >
-          {header}
+          {pill}
         </Animated.View>
       ) : null}
       <ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: floating ? headerH : 0, paddingBottom: (withActionBar ? 110 : PILL_BOTTOM_SPACE + 40) + insets.bottom }}
+        contentContainerStyle={{ paddingTop: wide ? 0 : contentTop, paddingBottom: (withActionBar ? 110 : PILL_BOTTOM_SPACE + 40) + insets.bottom }}
       >
+        {pill && wide ? <View className="items-center pt-4">{pill}</View> : null}
         <View className={`mx-auto w-full max-w-[1180px] px-4 md:px-10 ${contentClassName}`}>{children}</View>
       </ScrollView>
     </View>
   );
 }
 
-/** Sticky bar (checkout / add to cart) that sits above the nav and drops down when it hides. */
+/** Sticky bar (pay / add to cart). These pages have no bottom nav, so it sits flush at the bottom. */
 export function ActionBar({ children }: { children: React.ReactNode }) {
   const { wide } = useNav();
   const bottomInset = useBottomInset();
-  // Pages that use this bar have no bottom nav, so it sits flush at the bottom
   return (
     <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 40 }}>
       <Glass solid className="flex-row items-center gap-3 border-x-0 px-4 pt-3" style={{ paddingBottom: 12 + (wide ? 0 : bottomInset) }}>
@@ -57,32 +77,4 @@ export function ActionBar({ children }: { children: React.ReactNode }) {
       </Glass>
     </View>
   );
-}
-
-export function Header({
-  title,
-  left,
-  right,
-}: {
-  title?: string;
-  left?: React.ReactNode;
-  right?: React.ReactNode;
-}) {
-  const insets = useSafeAreaInsets();
-  const tg = useTelegram();
-  // Telegram fullscreen draws Close/menu over the app: keep the header content below them
-  const top = Math.max(insets.top, tg.insets.top);
-  return (
-    <Glass dark intensity={60} className="rounded-b-3xl border-t-0" style={{ paddingTop: (tg.inTelegram ? 4 : 14) + top }}>
-      <View className="mx-auto w-full max-w-[1180px] flex-row items-center justify-between gap-3 px-4 pb-4 md:px-10">
-        {left}
-        {title ? <View className="flex-1 items-center"><TitleText>{title}</TitleText></View> : <View className="flex-1" />}
-        {right}
-      </View>
-    </Glass>
-  );
-}
-
-function TitleText({ children }: { children: React.ReactNode }) {
-  return <Text className="text-[17px] font-bold text-white">{children}</Text>;
 }
