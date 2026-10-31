@@ -36,10 +36,12 @@ jobs:
         env:
           CI: "1"
           EXPO_NO_TELEMETRY: "1"
-          # temporary host for invoice PDFs (Cloudflare Worker in cloudflare/invoice-worker)
-          EXPO_PUBLIC_INVOICE_API: https://mini-shop-invoices.infra-deploy-domain.workers.dev
-          EXPO_PUBLIC_PRODUCTS_URL: https://mini-shop-api.infra-deploy-domain.workers.dev/products
-          EXPO_PUBLIC_ORDERS_API: https://mini-shop-api.infra-deploy-domain.workers.dev
+          # the Python backend in backend/ (products, orders, invoice host). Set the repository variable BACKEND_URL
+          # (Settings > Secrets and variables > Actions > Variables) to its https address, e.g. https://api.example.com.
+          # Until it is set the app still uses the old Cloudflare Worker.
+          EXPO_PUBLIC_INVOICE_API: ${{ vars.BACKEND_URL || 'https://mini-shop-invoices.infra-deploy-domain.workers.dev' }}
+          EXPO_PUBLIC_PRODUCTS_URL: ${{ format('{0}/products', vars.BACKEND_URL || 'https://mini-shop-api.infra-deploy-domain.workers.dev') }}
+          EXPO_PUBLIC_ORDERS_API: ${{ vars.BACKEND_URL || 'https://mini-shop-api.infra-deploy-domain.workers.dev' }}
       # Pages serves 404.html for unknown paths; reuse index.html so deep links work
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5
