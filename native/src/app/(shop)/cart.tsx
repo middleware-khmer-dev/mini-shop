@@ -8,15 +8,12 @@ import { ActionBar, Header, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { Row } from "@/components/Row";
 import { useAuth } from "@/lib/auth";
-import { useMainButton, useTelegram } from "@/lib/telegram";
+import { useMainButton } from "@/lib/telegram";
 import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
-import { useGoBack } from "@/lib/nav";
 
 export default function Cart() {
-  const back = useGoBack();
-  const { inTelegram } = useTelegram();
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
   const { session } = useAuth();
@@ -36,7 +33,7 @@ export default function Cart() {
         header={
           <Header
             title={t("cart.title", { n: count })}
-            left={inTelegram ? <View className="h-10 w-10" /> : <Pressable onPress={back} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
+            left={<View className="h-10 w-10" />}
             right={<Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className={hBtn}><Icon name="trash" size={18} color="#fff" /></Pressable>}
           />
         }

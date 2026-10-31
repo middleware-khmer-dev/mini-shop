@@ -9,11 +9,10 @@ import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
 import { useProducts } from "@/lib/products";
 import { useAuth } from "@/lib/auth";
 import { money, useCart } from "@/lib/cart";
-import { useMainButton, useTelegram, haptic } from "@/lib/telegram";
+import { useMainButton, haptic } from "@/lib/telegram";
 import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
-import { useGoBack } from "@/lib/nav";
 
 type Opt = { id: string; icon: string; price?: number };
 
@@ -48,8 +47,6 @@ function OptionList({ options, value, onChange, prefix }: { options: readonly Op
 const H = ({ children }: { children: string }) => <Text className="text-base font-bold text-ink">{children}</Text>;
 
 export default function Checkout() {
-  const back = useGoBack();
-  const { inTelegram } = useTelegram();
   const [placing, setPlacing] = useState(false);
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
@@ -76,7 +73,7 @@ export default function Checkout() {
     <>
       <Screen
         withActionBar={!native}
-        header={<Header title={t("checkout.title")} left={inTelegram ? <View className="h-10 w-10" /> : <Pressable onPress={back} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
+        header={<Header title={t("checkout.title")} left={<View className="h-10 w-10" />} right={<View className="h-10 w-10" />} />}
         contentClassName="gap-5 pt-4"
       >
         <CheckoutSteps step={2} />
