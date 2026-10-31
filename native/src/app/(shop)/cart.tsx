@@ -8,11 +8,15 @@ import { ActionBar, Header, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { Row } from "@/components/Row";
 import { useAuth } from "@/lib/auth";
-import { useMainButton } from "@/lib/telegram";
+import { useMainButton, useTelegram } from "@/lib/telegram";
+import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
+import { useGoBack } from "@/lib/nav";
 
 export default function Cart() {
+  const back = useGoBack();
+  const { inTelegram } = useTelegram();
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
   const { session } = useAuth();
@@ -22,7 +26,7 @@ export default function Cart() {
   const total = subtotal + SHIPPING_DEFAULT;
   const goPay = () => (session ? router.push("/checkout") : router.push({ pathname: "/login", params: { redirect: "/checkout" } }));
   // In Telegram the big Main button does the paying; the in-page bar is hidden
-  const native = useMainButton({ text: `${t("cart.pay")} · ${money(total)}`, onPress: goPay, visible: lines.length > 0 });
+  const native = useMainButton({ text: `${session ? t("cart.pay") : t("cart.signInToPay")} · ${money(total)}`, onPress: goPay, visible: lines.length > 0 });
   const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
 
   return (
@@ -32,7 +36,7 @@ export default function Cart() {
         header={
           <Header
             title={t("cart.title", { n: count })}
-            left={<Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
+            left={inTelegram ? <View className="h-10 w-10" /> : <Pressable onPress={back} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
             right={<Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className={hBtn}><Icon name="trash" size={18} color="#fff" /></Pressable>}
           />
         }
@@ -48,6 +52,7 @@ export default function Cart() {
           </View>
         ) : (
           <>
+            <CheckoutSteps step={1} />
             {lines.map((l) => {
               const p = findProduct(l.productId);
               if (!p) return null;
@@ -97,7 +102,7 @@ export default function Cart() {
             <Text className="text-[11px] text-soft">{t("common.totalAll")}</Text>
             <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
           </View>
-          <Pressable onPress={goPay} className="rounded-2xl bg-[#14141f] px-8 py-3.5"><Text className="text-[14px] font-bold text-white">{t("cart.pay")}</Text></Pressable>
+          <Pressable onPress={goPay} className="rounded-2xl bg-[#14141f] px-8 py-3.5"><Text className="text-[14px] font-bold text-white">{session ? t("cart.pay") : t("cart.signInToPay")}</Text></Pressable>
         </ActionBar>
       ) : null}
     </>

@@ -1,4 +1,5 @@
-import { usePathname, router } from "expo-router";
+import { usePathname } from "expo-router";
+import { goBack } from "@/lib/nav";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
@@ -19,6 +20,8 @@ type MainBtn = Btn & {
   setParams: (p: { color?: string; text_color?: string; is_active?: boolean; is_visible?: boolean }) => void;
   enable: () => void;
   disable: () => void;
+  showProgress?: (leaveActive?: boolean) => void;
+  hideProgress?: () => void;
 };
 type WebApp = {
   initData?: string;
@@ -134,7 +137,7 @@ export function TelegramBackButton() {
   useEffect(() => {
     const tg = getWebApp();
     if (!inTelegram || !tg?.BackButton) return;
-    const back = () => (router.canGoBack() ? router.back() : router.replace("/home"));
+    const back = () => goBack(path);
     if (atRoot) {
       tg.BackButton.hide();
       return;
@@ -153,9 +156,9 @@ export function TelegramBackButton() {
  * Telegram's Main button (big button at the bottom of the Mini App). Returns true when it is
  * in use, so the screen can hide its own in-page equivalent.
  */
-export function useMainButton(opts: { text: string; onPress: () => void; visible?: boolean; disabled?: boolean }) {
+export function useMainButton(opts: { text: string; onPress: () => void; visible?: boolean; disabled?: boolean; loading?: boolean }) {
   const { inTelegram } = useTelegram();
-  const { text, onPress, visible = true, disabled = false } = opts;
+  const { text, onPress, visible = true, disabled = false, loading = false } = opts;
   const pressRef = useRef(onPress);
   pressRef.current = onPress;
 
@@ -170,15 +173,19 @@ export function useMainButton(opts: { text: string; onPress: () => void; visible
     const handler = () => pressRef.current();
     mb.setParams({ color: "#14141f", text_color: "#ffffff" });
     mb.setText(text);
-    if (disabled) mb.disable();
+    if (disabled || loading) mb.disable();
     else mb.enable();
+    // spinner on the button while the order is being placed (also blocks double taps)
+    if (loading) mb.showProgress?.(true);
+    else mb.hideProgress?.();
     mb.show();
     mb.onClick(handler);
     return () => {
       mb.offClick(handler);
+      mb.hideProgress?.();
       mb.hide();
     };
-  }, [inTelegram, text, visible, disabled]);
+  }, [inTelegram, text, visible, disabled, loading]);
 
   return inTelegram && visible;
 }
