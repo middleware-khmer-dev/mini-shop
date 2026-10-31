@@ -19,7 +19,7 @@ Set `EXPO_PUBLIC_API_BASE=https://your-api` (see `src/lib/auth.tsx`):
 Without it, a demo (mock) login is used.
 
 ## Structure
-- `src/app/index.tsx` login/register, `src/app/(shop)/*` home, catalog, product/[id], cart, checkout, success, profile (all behind login)
+- `src/app/index.tsx` opens on home; `src/app/login.tsx` login/register (`?redirect=` returns to the page you came from); `src/app/(shop)/*` home, catalog, product/[id], cart, checkout, success, profile. Browsing is open to guests; sign-in is required when paying
 - `src/components/PillNav.tsx` round icon-only nav (phone), top bar (wide web); hides on scroll down, returns on scroll up
 - `src/components/Glass.tsx` glassmorphism surfaces (expo-blur) and backdrop
 

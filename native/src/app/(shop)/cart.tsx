@@ -7,10 +7,12 @@ import { Media } from "@/components/ProductCard";
 import { ActionBar, Header, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { Row } from "@/components/Row";
+import { useAuth } from "@/lib/auth";
 import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
 
 export default function Cart() {
   const { find: findProduct } = useProducts();
+  const { session } = useAuth();
   const { lines, count, subtotal, saved, setQty, remove, clear } = useCart();
   const [promo, setPromo] = useState("");
   const [applied, setApplied] = useState(false);
@@ -89,7 +91,7 @@ export default function Cart() {
             <Text className="text-[11px] text-soft">សរុបទាំងអស់</Text>
             <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
           </View>
-          <Pressable onPress={() => router.push("/checkout")} className="rounded-2xl bg-[#14141f] px-8 py-3.5"><Text className="text-[14px] font-bold text-white">ទូទាត់ប្រាក់</Text></Pressable>
+          <Pressable onPress={() => (session ? router.push("/checkout") : router.push({ pathname: "/login", params: { redirect: "/checkout" } }))} className="rounded-2xl bg-[#14141f] px-8 py-3.5"><Text className="text-[14px] font-bold text-white">ទូទាត់ប្រាក់</Text></Pressable>
         </ActionBar>
       ) : null}
     </>
