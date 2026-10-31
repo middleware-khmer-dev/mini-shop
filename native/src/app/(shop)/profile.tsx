@@ -5,12 +5,14 @@ import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { LangSwitch } from "@/components/LangSwitch";
 import { Screen } from "@/components/Screen";
+import { useFavorites } from "@/lib/favorites";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 
 export default function Profile() {
   const { t } = useI18n();
   const { session, logout } = useAuth();
+  const { ids } = useFavorites();
   return (
     <Screen title={t("profile.title")} contentClassName="gap-4 pt-2">
       <Glass strong className="flex-row items-center gap-4 rounded-3xl p-5">
@@ -20,6 +22,15 @@ export default function Profile() {
           <Text className="text-[13px] text-soft">{session ? session.user.phone : t("profile.loginHint")}</Text>
         </View>
       </Glass>
+      <Pressable onPress={() => router.push("/favorites")}>
+        <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
+          <View className="flex-row items-center gap-3">
+            <Icon name="heart" size={18} color="#e11d48" fill="#e11d48" />
+            <Text className="text-[14px] font-bold text-ink">{t("fav.title")}</Text>
+          </View>
+          <Text className="text-[13px] text-soft">{t("fav.count", { n: ids.length })}</Text>
+        </Glass>
+      </Pressable>
       <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
         <Text className="text-[14px] font-bold text-ink">{t("lang.title")}</Text>
         <LangSwitch />

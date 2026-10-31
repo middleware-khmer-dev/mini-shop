@@ -5,6 +5,7 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { mediaColors, Product } from "@/data/shop";
 import { useCart, money } from "@/lib/cart";
+import { useFavorites } from "@/lib/favorites";
 import { haptic } from "@/lib/telegram";
 import { Glass } from "./Glass";
 import { Icon } from "./Icon";
@@ -25,6 +26,8 @@ export function Media({ product, className = "" }: { product: Product; className
 export function ProductCard({ product }: { product: Product }) {
   const { t } = useI18n();
   const { add } = useCart();
+  const { has, toggle } = useFavorites();
+  const fav = has(product.id);
   return (
     <Pressable className="w-full" onPress={() => router.push(`/product/${product.id}`)}>
       <Glass className="rounded-2xl">
@@ -35,9 +38,20 @@ export function ProductCard({ product }: { product: Product }) {
               <Text className="text-[11px] font-bold text-ink">{product.badge}</Text>
             </View>
           ) : null}
-          <View className="absolute right-2 top-2 h-8 w-8 items-center justify-center rounded-full bg-white/80">
-            <Icon name="heart" size={16} color="#9ca3af" />
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("product.wish")}
+            accessibilityState={{ selected: fav }}
+            hitSlop={8}
+            onPress={(e) => {
+              e.stopPropagation();
+              toggle(product.id);
+              haptic();
+            }}
+            className="absolute right-2 top-2 h-9 w-9 items-center justify-center rounded-full bg-white/90 active:scale-90"
+          >
+            <Icon name="heart" size={17} color={fav ? "#e11d48" : "#6b7280"} fill={fav ? "#e11d48" : "none"} />
+          </Pressable>
         </View>
         <View className="gap-1.5 p-3">
           <Text numberOfLines={2} ellipsizeMode="tail" style={{ height: 40, lineHeight: 20, overflow: "hidden" }} className="text-[13px] font-semibold text-ink">

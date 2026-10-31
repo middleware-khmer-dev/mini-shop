@@ -7,6 +7,7 @@ import { Media } from "@/components/ProductCard";
 import { ActionBar, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { money, useCart } from "@/lib/cart";
+import { useFavorites } from "@/lib/favorites";
 import { haptic } from "@/lib/telegram";
 import { useI18n } from "@/lib/i18n";
 
@@ -23,7 +24,8 @@ export default function ProductScreen() {
   const [size, setSize] = useState(1);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<"desc" | "reviews">("desc");
-  const [wish, setWish] = useState(false);
+  const { has, toggle } = useFavorites();
+  const wish = has(product.id);
   const [added, setAdded] = useState(false);
 
   const off = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : 0;
@@ -52,7 +54,7 @@ export default function ProductScreen() {
           </View>
           <View className="absolute inset-x-3 top-3 z-10 flex-row items-center justify-end md:hidden">
                         <View className="flex-row gap-2">
-              <Pressable onPress={() => setWish(!wish)} accessibilityLabel={t("product.wish")} className={circle}>
+              <Pressable onPress={() => { toggle(product.id); haptic(); }} accessibilityLabel={t("product.wish")} className={circle}>
                 <Icon name="heart" size={18} color={wish ? "#e11d48" : "#374151"} fill={wish ? "#e11d48" : "none"} />
               </Pressable>
               <Pressable accessibilityLabel={t("product.share")} className={circle}><Icon name="share" size={18} /></Pressable>

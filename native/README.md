@@ -40,3 +40,6 @@ Paying saves an order on the device (`src/lib/orders.tsx`; items are a snapshot)
 Inside Telegram the in-app browser usually ignores files a page generates itself, and Telegram's own `downloadFile` needs an https URL on a server (there is none here). So there the invoice button first opens the system share sheet with the real PDF/PNG file (save to Files, send to a chat); if the client has no share sheet, a full-screen picture of the invoice is shown to press-and-hold to save (or screenshot). In a normal browser the file is downloaded directly. For a true one-tap save inside Telegram you need a small server that hosts the PDF at an https URL, then call `Telegram.WebApp.downloadFile`.
 
 With `EXPO_PUBLIC_INVOICE_API` set (it is, in the Pages workflow), the PDF button inside Telegram 8.0+ uploads the PDF to the Cloudflare Worker in `../cloudflare/invoice-worker` and opens Telegram's own download dialog (`downloadFile`), so no browser is needed. If the Worker cannot be reached it falls back to the share sheet / picture above.
+
+## Favorites
+The heart on a product card or the product page toggles a favorite (saved in `mini_shop_favorites`, survives reopening the app). Account → Favorites lists them at `/favorites`.
