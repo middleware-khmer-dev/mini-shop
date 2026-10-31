@@ -1,0 +1,73 @@
+import { useLocalSearchParams } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Glass } from "@/components/Glass";
+import { Icon } from "@/components/Icon";
+import { ProductCard } from "@/components/ProductCard";
+import { Header, Screen } from "@/components/Screen";
+import { categories, products } from "@/data/shop";
+
+export default function Catalog() {
+  const params = useLocalSearchParams<{ cat?: string }>();
+  const [active, setActive] = useState(params.cat ?? "all");
+  const [query, setQuery] = useState("");
+  const [sorted, setSorted] = useState(false);
+
+  const list = useMemo(() => {
+    // Category is demo-only data (products aren't tagged), so chips don't filter, as on the web version.
+    const q = query.trim().toLowerCase();
+    const out = products.filter((p) => !q || p.name.toLowerCase().includes(q));
+    return sorted ? [...out].sort((a, b) => a.price - b.price) : out;
+  }, [query, sorted]);
+
+  const chips = [{ id: "all", label: "ទាំងអស់" }, ...categories.map((c) => ({ id: c.id, label: c.label }))];
+
+  return (
+    <Screen
+      header={
+        <Header
+          title="កាតាឡុក"
+          left={<View className="h-10 w-10" />}
+          right={<View className="h-10 w-10" />}
+        />
+      }
+      contentClassName="gap-4 pt-4"
+    >
+      <Glass strong className="flex-row items-center gap-2 rounded-full px-4">
+        <Icon name="search" size={16} color="#6b7280" />
+        <TextInput value={query} onChangeText={setQuery} placeholder="ស្វែងរកទំនិញ..." placeholderTextColor="#a9adb8" className="flex-1 py-3 text-[13.5px] text-ink" />
+      </Glass>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
+        {chips.map((c) => (
+          <Pressable key={c.id} onPress={() => setActive(c.id)} className={`rounded-full border px-4 py-2 ${active === c.id ? "border-white/35 bg-[#14141f]/85" : "border-glass-line bg-white/55"}`}>
+            <Text className={`text-[12.5px] font-semibold ${active === c.id ? "text-white" : "text-ink"}`}>{c.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <View className="flex-row items-center justify-between">
+        <Text className="text-[12.5px] text-soft">បង្ហាញ {list.length} ទំនិញ</Text>
+        <Pressable onPress={() => setSorted(true)} className="rounded-full border border-glass-line bg-white/55 px-3 py-1.5">
+          <Text className="text-[12px] font-semibold text-ink">តម្លៃទាប → ខ្ពស់</Text>
+        </Pressable>
+      </View>
+
+      {list.length === 0 ? (
+        <View className="items-center gap-1 py-16">
+          <Icon name="search" size={36} color="#9ca3af" />
+          <Text className="font-bold text-ink">រកមិនឃើញទំនិញ</Text>
+          <Text className="text-[12.5px] text-soft">សូមសាកល្បងពាក្យផ្សេង</Text>
+        </View>
+      ) : (
+        <View className="-mx-1.5 flex-row flex-wrap">
+          {list.map((p) => (
+            <View key={p.id} className="w-1/2 p-1.5 md:w-1/4">
+              <ProductCard product={p} />
+            </View>
+          ))}
+        </View>
+      )}
+    </Screen>
+  );
+}
