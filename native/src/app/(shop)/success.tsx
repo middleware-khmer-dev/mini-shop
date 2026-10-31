@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Icon } from "@/components/Icon";
+import { OrderTracker, isFinal } from "@/components/OrderTracker";
 import { Screen } from "@/components/Screen";
 import { Lang, useI18n } from "@/lib/i18n";
 import { DownloadKind, InvoiceLabels, downloadInvoice } from "@/lib/invoice";
@@ -55,6 +56,12 @@ export default function Invoice() {
     fetchOrderStatus(order.id, token).then((s) => setStatus(order.id, s.status)).catch(() => {});
   };
   useEffect(refreshStatus, [order?.id, token]);
+  // keep checking while the order is still on its way
+  useEffect(() => {
+    if (!ORDERS_API || !order || !token || isFinal(order.status)) return;
+    const timer = setInterval(refreshStatus, 30_000);
+    return () => clearInterval(timer);
+  }, [order?.id, token, order?.status]);
 
   if (!order) {
     return (
@@ -88,10 +95,12 @@ export default function Invoice() {
         <View className="h-14 w-14 items-center justify-center rounded-full bg-green-500"><Icon name="check" size={28} color="#fff" /></View>
         <Text className="text-xl font-extrabold text-ink">{t("success.title")}</Text>
         {order.status ? (
-          <Pressable onPress={refreshStatus} accessibilityLabel={t("order.refresh")} className="flex-row items-center gap-2 rounded-full bg-white/80 px-4 py-1.5">
-            <Text className="text-[12.5px] text-soft">{t("order.status")}</Text>
-            <Text className="text-[13px] font-bold text-ink">{t(`order.s.${order.status}`, { fallback: order.status })}</Text>
-          </Pressable>
+          <View className="mt-1 w-full items-center gap-2">
+            <OrderTracker status={order.status} />
+            <Pressable onPress={refreshStatus} accessibilityLabel={t("order.refresh")} className="rounded-full bg-white/80 px-4 py-1.5">
+              <Text className="text-[12px] font-semibold text-soft">{t("order.refresh")}</Text>
+            </Pressable>
+          </View>
         ) : null}
       </View>
 
