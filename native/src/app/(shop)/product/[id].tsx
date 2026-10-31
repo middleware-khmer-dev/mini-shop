@@ -84,12 +84,12 @@ export default function ProductScreen() {
           </View>
         </View>
 
-        <Glass strong className="mt-3 gap-4 rounded-3xl p-5 md:mt-0 md:flex-1">
+        <Glass strong className="mt-3 gap-3 rounded-3xl p-5 md:mt-0 md:flex-1">
           <View className="flex-row items-center gap-2">
             <View className="rounded-full bg-white/70 px-2.5 py-1"><Text className="text-[11px] font-semibold text-ink">{t(`cat.${product.category}`, { fallback: product.category ?? "" })}</Text></View>
             {product.badge ? <View className="rounded-full bg-black px-2.5 py-1"><Text className="text-[11px] font-bold text-white">{product.badge}</Text></View> : null}
           </View>
-          <Text className="text-xl font-bold text-ink">{product.name}</Text>
+          <Text className="text-xl font-bold text-ink" style={{ lineHeight: 26 }}>{product.name}</Text>
           <View className="flex-row items-center gap-1.5">
             <Icon name="star" size={14} color="#f59e0b" />
             <Text className="text-[13px] font-bold text-ink">{st.rating}</Text>
@@ -131,7 +131,7 @@ export default function ProductScreen() {
             ))}
           </View>
           {tab === "desc" ? (
-            <Text className="text-[13px] leading-6 text-soft">{product.description ?? ""}</Text>
+            <Text className="text-[13px] text-soft" style={{ lineHeight: 20 }}>{product.description ?? ""}</Text>
           ) : (
             <View className="gap-3">
               <View className="flex-row items-center gap-2">
