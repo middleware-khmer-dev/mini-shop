@@ -104,6 +104,20 @@ export default function Invoice() {
         ) : null}
       </View>
 
+      {order.payMethod === "khqr" && order.status !== "cancelled" ? (
+        <View className="w-full max-w-[440px] items-center gap-2 rounded-3xl bg-white p-5 shadow-lg shadow-black/10">
+          <Text className="text-[15px] font-extrabold text-ink">{t("qr.title")}</Text>
+          {order.qrImage ? (
+            <Image source={{ uri: order.qrImage }} resizeMode="contain" accessibilityLabel={t("qr.title")} style={{ width: 240, height: 240 }} />
+          ) : (
+            <Text className="text-center text-[13px] leading-5 text-soft">{t("qr.none")}</Text>
+          )}
+          <Text className="text-[12px] text-soft">{t("qr.amount")}</Text>
+          <Text className="text-[22px] font-extrabold text-ink">{money(order.total)}</Text>
+          <Text className="text-center text-[12px] leading-5 text-soft">{t("qr.note")}</Text>
+        </View>
+      ) : null}
+
       {/* the invoice, laid out like a paper receipt */}
       <View className="w-full max-w-[440px] overflow-hidden rounded-3xl bg-white shadow-lg shadow-black/10">
         <View className="h-2 bg-[#14141f]" />

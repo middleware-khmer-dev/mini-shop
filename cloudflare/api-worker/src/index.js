@@ -8,7 +8,7 @@
 // orders are rows in a D1 database (binding DB).
 
 import { ADMIN_HTML, ADMIN_JS } from "./admin.js";
-import { adminOrders, publicOrders } from "./orders.js";
+import { adminOrders, cleanSettings, loadSettings, publicOrders } from "./orders.js";
 
 const MAX_IMAGE_BYTES = 2_000_000;
 const MAX_PRODUCTS = 500;
@@ -122,6 +122,18 @@ async function admin(request, env, url) {
   if (path === "/orders" || path.startsWith("/orders/")) {
     const res = await adminOrders(request, env, path, url);
     if (res) return res;
+  }
+
+  if (path === "/settings") {
+    if (request.method === "GET") return reply(200, await loadSettings(env));
+    if (request.method === "PUT") {
+      const { error, settings } = cleanSettings(await request.json().catch(() => null), origin);
+      if (error) return reply(400, { error });
+      const before = await loadSettings(env);
+      await env.DATA.put("settings", JSON.stringify(settings));
+      if (before.qrImage && before.qrImage !== settings.qrImage) await dropUnusedImages(env, origin, [before.qrImage], []);
+      return reply(200, settings);
+    }
   }
 
   if (request.method === "GET" && path === "/products") return reply(200, await loadProducts(env));

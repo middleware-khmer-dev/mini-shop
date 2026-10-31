@@ -86,5 +86,4 @@ export const SHIPPING_OPTIONS = [
 export const PAYMENT_OPTIONS = [
   { id: "cod", icon: "cash" },
   { id: "khqr", icon: "qr" },
-  { id: "card", icon: "card" },
 ] as const;

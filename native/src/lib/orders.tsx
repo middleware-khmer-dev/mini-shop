@@ -12,11 +12,12 @@ export type Order = {
   shipping: number;
   shippingId: string;
   total: number;
-  payMethod: string; // cod | khqr | card
+  payMethod: string; // cod | khqr
   customer: { name: string; phone: string };
   address: string;
   location?: { lat: number; lng: number }; // where the customer dropped the pin, if they did
   note?: string;
+  qrImage?: string; // picture of the shop's payment QR, for orders paid by QR
   token?: string; // secret that lets this device ask the server for the order status
   status?: string; // pending | confirmed | shipped | delivered | cancelled (from the server)
 };
