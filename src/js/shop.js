@@ -9,6 +9,8 @@
     syncViewportHeight();
     tg.onEvent("themeChanged", applyTelegramTheme);
     tg.onEvent("viewportChanged", syncViewportHeight);
+    tg.onEvent("safeAreaChanged", syncViewportHeight);
+    tg.onEvent("contentSafeAreaChanged", syncViewportHeight);
     document.documentElement.classList.add("in-telegram");
   }
 
@@ -25,6 +27,8 @@
   // Keep the app shell sized to Telegram's actual viewport (differs per
   // device/screen and changes when the client's own chrome resizes it).
   function syncViewportHeight() {
+    var sa = tg.safeAreaInset || {}, ca = tg.contentSafeAreaInset || {};
+    document.documentElement.style.setProperty("--tg-top", ((sa.top || 0) + (ca.top || 0)) + "px");
     var height = tg.viewportStableHeight || tg.viewportHeight;
     if (height) {
       document.documentElement.style.setProperty("--tg-viewport-height", height + "px");
@@ -81,9 +85,18 @@
     return null;
   };
 
+  // ---- Persistent bottom nav: inject on pages that don't ship it (cart, product, checkout, ...) ----
+  if (!document.querySelector(".bottomnav")) {
+    var holder = document.createElement("div");
+    holder.innerHTML = '<nav class="bottomnav" aria-label="Main"><a class="navbrand" href="home.html">🛍️ Mini Shop</a><a class="navlink" data-nav="home" href="home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>ទំព័រដើម</span><i class="navlink__dot"></i></a><a class="navlink" data-nav="catalog" href="catalog.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>កាតាឡុក</span><i class="navlink__dot"></i></a><a class="navlink" data-nav="cart" href="cart.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 2H2"/><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="20" r="1.4" fill="currentColor" stroke="none"/></svg><span>កន្ត្រក</span><span class="navlink__badge">2</span><i class="navlink__dot"></i></a><a class="navlink" data-nav="profile" href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 6-5 8-5s6.5 1 8 5"/></svg><span>គណនី</span><i class="navlink__dot"></i></a></nav>';
+    document.body.appendChild(holder.firstChild);
+    document.body.classList.add("has-nav");
+  }
+
   // ---- Bottom nav active state from data-page on <body> ----
   document.addEventListener("DOMContentLoaded", function () {
     var page = document.body.getAttribute("data-page");
+    page = { product: "catalog", checkout: "cart" }[page] || page;
     document.querySelectorAll(".navlink").forEach(function (a) {
       if (a.getAttribute("data-nav") === page) a.classList.add("is-active");
       else a.classList.remove("is-active");
