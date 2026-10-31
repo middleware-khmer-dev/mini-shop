@@ -137,4 +137,18 @@
     var card = e.target.closest(".product[data-id]");
     if (card) location.href = "product.html?id=" + card.getAttribute("data-id");
   });
+
+  // ---- Signed-in user: greeting name + logout from the Account tab ----
+  if (window.Auth) {
+    var session = Auth.session();
+    var nameEl = document.querySelector(".topbar__name");
+    if (nameEl && session && session.user && session.user.name) nameEl.textContent = session.user.name;
+    var profile = document.querySelector('.navlink[data-nav="profile"]');
+    if (profile) {
+      profile.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (window.confirm("ចាកចេញពីគណនី?")) Auth.logout();
+      });
+    }
+  }
 })();
