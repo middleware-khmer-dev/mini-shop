@@ -23,6 +23,12 @@ type WebApp = {
   expand: () => void;
   safeAreaInset?: { top?: number; bottom?: number };
   contentSafeAreaInset?: { top?: number; bottom?: number };
+  isVersionAtLeast?: (v: string) => boolean;
+  isFullscreen?: boolean;
+  requestFullscreen?: () => void;
+  setHeaderColor?: (c: string) => void;
+  setBackgroundColor?: (c: string) => void;
+  setBottomBarColor?: (c: string) => void;
   onEvent: (e: string, cb: () => void) => void;
   offEvent: (e: string, cb: () => void) => void;
   BackButton?: Btn;
@@ -74,6 +80,37 @@ function loadScript(): Promise<void> {
   });
 }
 
+const EVENTS = ["safeAreaChanged", "contentSafeAreaChanged", "viewportChanged", "fullscreenChanged"];
+
+/**
+ * Make Telegram's own chrome match the app: open fullscreen where the client supports it (the
+ * Back / Close buttons then float over the app's gradient), and otherwise tint the header, page
+ * background and bottom bar so they blend in instead of showing a white bar on top and a black
+ * strip at the bottom.
+ */
+function styleTelegram(tg: WebApp) {
+  const ok = (v: string) => {
+    try {
+      return tg.isVersionAtLeast ? tg.isVersionAtLeast(v) : false;
+    } catch {
+      return false;
+    }
+  };
+  const run = (fn: () => void) => {
+    try {
+      fn();
+    } catch {
+      /* not supported by this client */
+    }
+  };
+  if (ok("6.9")) {
+    run(() => tg.setHeaderColor?.("#f6ecfb"));
+    run(() => tg.setBackgroundColor?.("#ece8ff"));
+  }
+  if (ok("7.10")) run(() => tg.setBottomBarColor?.("#ffffff"));
+  if (ok("8.0") && !tg.isFullscreen) run(() => tg.requestFullscreen?.());
+}
+
 /**
  * Loads Telegram's WebApp SDK on web and exposes the insets taken by Telegram's own
  * controls (Close / menu, shown over the app in fullscreen) so headers can sit below them.
@@ -102,12 +139,13 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
       if (!tg) return;
       tg.ready();
       tg.expand();
+      if (isRealTelegram(tg)) styleTelegram(tg);
       read();
-      for (const e of ["safeAreaChanged", "contentSafeAreaChanged", "viewportChanged"]) tg.onEvent(e, read);
+      for (const e of EVENTS) tg.onEvent(e, read);
     });
     return () => {
       if (!tg) return;
-      for (const e of ["safeAreaChanged", "contentSafeAreaChanged", "viewportChanged"]) tg.offEvent(e, read);
+      for (const e of EVENTS) tg.offEvent(e, read);
     };
   }, []);
 
