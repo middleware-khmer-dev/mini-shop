@@ -1,0 +1,23 @@
+name = "mini-shop-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# product list
+[[kv_namespaces]]
+binding = "DATA"
+id = "773ff3115ba244f48e77d102a06cb2c5"
+
+# product pictures
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "mini-shop-images"
+
+# at most 60 admin requests per minute per IP
+[[unsafe.bindings]]
+name = "LIMITER"
+type = "ratelimit"
+namespace_id = "1002"
+simple = { limit = 60, period = 60 }
+
+# The admin password is a secret, not in this file:
+#   npx wrangler secret put ADMIN_PASSWORD

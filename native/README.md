@@ -24,11 +24,11 @@ Without it, a demo (mock) login is used.
 - `src/components/Glass.tsx` glassmorphism surfaces (expo-blur) and backdrop
 
 ## Products API
-Products load from `https://fakestoreapi.com/products` (override with `EXPO_PUBLIC_PRODUCTS_URL`).
+Products load from `EXPO_PUBLIC_PRODUCTS_URL`; the deployed site uses our own API (`cloudflare/api-worker`, with an admin page at `/admin` to manage products and pictures), and without the variable the app falls back to `https://fakestoreapi.com/products`.
 Fields used: `id, title, price, description, category, image, rating{rate,count}`. Categories are derived from the data.
 If the request fails, a few sample products are shown with a retry banner.
 
-**Several pictures per product:** if a product in the API has an `images` array (full `https://` URLs, e.g. the pictures an admin uploaded), the product page shows a gallery: swipe through them, a counter, and thumbnails to jump to one. `image` stays the main picture used on cards, and a product with one picture looks as before. The default fakestoreapi.com has only one picture per product, so the gallery appears once the API returns `images`.
+**Several pictures per product:** if a product in the API has an `images` array (full `https://` URLs, e.g. the pictures an admin uploaded), the product page shows a gallery: swipe through them, a counter, and thumbnails to jump to one. `image` stays the main picture used on cards, and a product with one picture looks as before. fakestoreapi.com has only one picture per product; with our own API, pictures added in the admin page show here.
 
 ## Language (Khmer / English)
 `src/lib/i18n.tsx` holds both dictionaries; the choice is saved on the device. Switch it from the home header, the login screen or the Account tab. Add a string by adding the same key to both `km` and `en`. Product names and descriptions come from the products API and are not translated.
