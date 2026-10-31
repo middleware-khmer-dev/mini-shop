@@ -12,14 +12,20 @@ export default function Profile() {
     <Screen header={<Header title="គណនី" left={<View className="h-10 w-10" />} right={<View className="h-10 w-10" />} />} contentClassName="gap-4 pt-6">
       <Glass strong className="flex-row items-center gap-4 rounded-3xl p-5">
         <View className="h-14 w-14 items-center justify-center rounded-full bg-[#14141f]"><Icon name="user" size={26} color="#fff" /></View>
-        <View>
-          <Text className="text-lg font-bold text-ink">{session?.user.name}</Text>
-          <Text className="text-[13px] text-soft">{session?.user.phone}</Text>
+        <View className="flex-1">
+          <Text className="text-lg font-bold text-ink">{session ? session.user.name : "ភ្ញៀវ"}</Text>
+          <Text className="text-[13px] text-soft">{session ? session.user.phone : "ចូលគណនីដើម្បីទិញទំនិញ"}</Text>
         </View>
       </Glass>
-      <Pressable onPress={async () => { await logout(); router.replace("/"); }} className="items-center rounded-2xl border border-glass-line bg-white/70 py-3.5">
-        <Text className="font-bold text-red-500">ចាកចេញពីគណនី</Text>
-      </Pressable>
+      {session ? (
+        <Pressable onPress={async () => { await logout(); router.replace("/home"); }} className="items-center rounded-2xl border border-glass-line bg-white/70 py-3.5">
+          <Text className="font-bold text-red-500">ចាកចេញពីគណនី</Text>
+        </Pressable>
+      ) : (
+        <Pressable onPress={() => router.push("/login")} className="items-center rounded-2xl bg-[#14141f] py-3.5">
+          <Text className="font-bold text-white">ចូលគណនី / ចុះឈ្មោះ</Text>
+        </Pressable>
+      )}
     </Screen>
   );
 }

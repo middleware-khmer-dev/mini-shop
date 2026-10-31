@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
@@ -7,6 +7,7 @@ import { Media } from "@/components/ProductCard";
 import { ActionBar, Header, Screen } from "@/components/Screen";
 import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
 import { useProducts } from "@/lib/products";
+import { useAuth } from "@/lib/auth";
 import { money, useCart } from "@/lib/cart";
 import { Row } from "@/components/Row";
 
@@ -43,11 +44,13 @@ const H = ({ children }: { children: string }) => <Text className="text-base fon
 
 export default function Checkout() {
   const { find: findProduct } = useProducts();
+  const { session, ready } = useAuth();
   const { lines, subtotal, clear } = useCart();
   const [ship, setShip] = useState<string>("standard");
   const [pay, setPay] = useState<string>("cod");
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
   const total = subtotal + shipping;
+  if (ready && !session) return <Redirect href="/login?redirect=/checkout" />;
   const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
 
   return (

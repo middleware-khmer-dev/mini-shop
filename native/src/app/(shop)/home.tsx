@@ -35,7 +35,7 @@ export default function Home() {
           left={
             <View>
               <Text className="text-[12.5px] text-white/85">សួស្តី 👋</Text>
-              <Text className="text-[17px] font-bold text-white">{session?.user.name}</Text>
+              <Text className="text-[17px] font-bold text-white">{session?.user.name ?? "ភ្ញៀវ"}</Text>
             </View>
           }
           right={
