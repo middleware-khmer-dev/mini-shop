@@ -11,6 +11,7 @@ import { CartProvider } from "@/lib/cart";
 import { FavoritesProvider } from "@/lib/favorites";
 import { I18nProvider } from "@/lib/i18n";
 import { OrdersProvider } from "@/lib/orders";
+import { ReviewsProvider } from "@/lib/reviews";
 import { ProductsProvider } from "@/lib/products";
 import { TelegramBackButton, TelegramProvider } from "@/lib/telegram";
 
@@ -26,6 +27,7 @@ export default function RootLayout() {
         <OrdersProvider>
         <AddressProvider>
         <CartProvider>
+        <ReviewsProvider>
         <FavoritesProvider>
           <View className="flex-1 bg-[#ece8ff]">
             <Backdrop />
@@ -36,6 +38,7 @@ export default function RootLayout() {
             </ThemeProvider>
           </View>
         </FavoritesProvider>
+        </ReviewsProvider>
         </CartProvider>
         </AddressProvider>
         </OrdersProvider>
