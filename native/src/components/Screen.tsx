@@ -11,14 +11,15 @@ const PILL_H = 34;
  * Space taken at the top of a page. Inside Telegram (fullscreen) Telegram draws its Back / Close /
  * menu buttons in a row at the top; the page title sits in that same row, centered between them.
  */
-function useTopArea() {
+function useTopArea(hasTitle: boolean) {
   const insets = useSafeAreaInsets();
   const { insets: tg } = useTelegram();
   if (tg.controlsH > 0) {
     return { pillTop: tg.deviceTop + Math.max(0, (tg.controlsH - PILL_H) / 2), contentTop: tg.deviceTop + tg.controlsH + 10 };
   }
   const top = Math.max(insets.top, tg.deviceTop) + 10;
-  return { pillTop: top, contentTop: top + PILL_H + 10 };
+  // normal (non-fullscreen) mode: Telegram's own header sits above; only reserve room for the label when there is one
+  return { pillTop: top, contentTop: hasTitle ? top + PILL_H + 10 : top };
 }
 
 type Props = {
@@ -34,7 +35,7 @@ type Props = {
 export function Screen({ title, children, withActionBar, contentClassName = "" }: Props) {
   const { onScroll, wide, hidden } = useNav();
   const insets = useSafeAreaInsets();
-  const { pillTop, contentTop } = useTopArea();
+  const { pillTop, contentTop } = useTopArea(!!title);
   const pillY = hidden.interpolate({ inputRange: [0, 1], outputRange: [0, -(pillTop + PILL_H + 16)] });
 
   const pill = title ? (
