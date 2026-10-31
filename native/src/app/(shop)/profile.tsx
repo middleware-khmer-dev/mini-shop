@@ -4,7 +4,7 @@ import { Pressable, Text, View } from "react-native";
 import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { LangSwitch } from "@/components/LangSwitch";
-import { Header, Screen } from "@/components/Screen";
+import { Screen } from "@/components/Screen";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 
@@ -12,7 +12,7 @@ export default function Profile() {
   const { t } = useI18n();
   const { session, logout } = useAuth();
   return (
-    <Screen header={<Header title={t("profile.title")} left={<View className="h-10 w-10" />} right={<View className="h-10 w-10" />} />} contentClassName="gap-4 pt-6">
+    <Screen title={t("profile.title")} contentClassName="gap-4 pt-2">
       <Glass strong className="flex-row items-center gap-4 rounded-3xl p-5">
         <View className="h-14 w-14 items-center justify-center rounded-full bg-[#14141f]"><Icon name="user" size={26} color="#fff" /></View>
         <View className="flex-1">

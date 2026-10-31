@@ -6,7 +6,7 @@ import { Glass } from "@/components/Glass";
 import { Icon, IconName } from "@/components/Icon";
 import { ProductCard } from "@/components/ProductCard";
 import { LangSwitch } from "@/components/LangSwitch";
-import { Header, Screen } from "@/components/Screen";
+import { Screen } from "@/components/Screen";
 import { StatusBanner } from "@/components/StatusBanner";
 import { Product } from "@/data/shop";
 import { useProducts } from "@/lib/products";
@@ -32,32 +32,25 @@ export default function Home() {
   const { count } = useCart();
   const { products, categories } = useProducts();
   return (
-    <Screen
-      header={
-        <Header
-          left={
-            <View>
-              <Text className="text-[12.5px] text-white/85">{t("home.hello")}</Text>
-              <Text className="text-[17px] font-bold text-white">{session?.user.name ?? t("common.guest")}</Text>
-            </View>
-          }
-          right={
-            <View className="flex-row items-center gap-2">
-            <LangSwitch dark />
-            <Pressable onPress={() => router.push("/cart")} accessibilityLabel={t("nav.cart")} className="h-10 w-10 items-center justify-center rounded-xl bg-white/20">
-              <Icon name="cart" size={18} color="#fff" />
-              {count > 0 ? (
-                <View className="absolute -right-1 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-amber-300 px-1">
-                  <Text className="text-[9.5px] font-extrabold text-amber-900">{count}</Text>
-                </View>
-              ) : null}
-            </Pressable>
-            </View>
-          }
-        />
-      }
-      contentClassName="gap-6 pt-4"
-    >
+    <Screen contentClassName="gap-6 pt-2">
+      <View className="flex-row items-center justify-between">
+        <View>
+          <Text className="text-[12.5px] text-soft">{t("home.hello")}</Text>
+          <Text className="text-[17px] font-bold text-ink">{session?.user.name ?? t("common.guest")}</Text>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <LangSwitch />
+          <Pressable onPress={() => router.push("/cart")} accessibilityLabel={t("nav.cart")} className="h-10 w-10 items-center justify-center rounded-xl border border-glass-line bg-white/70">
+            <Icon name="cart" size={18} color="#111" />
+            {count > 0 ? (
+              <View className="absolute -right-1 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1">
+                <Text className="text-[9.5px] font-extrabold text-white">{count}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
+      </View>
+
       <Pressable onPress={() => router.push({ pathname: "/catalog", params: { focus: "1" } })}>
         <Glass strong className="flex-row items-center gap-3 rounded-full px-4 py-3">
           <Icon name="search" size={16} color="#6b7280" />

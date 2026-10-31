@@ -1,8 +1,13 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useProducts } from "@/lib/products";
 
 export type Line = { productId: number; qty: number; variant: string };
 
+const KEY = "mini_shop_cart";
+
+const isLine = (l: unknown): l is Line =>
+  !!l && typeof (l as Line).productId === "number" && typeof (l as Line).qty === "number" && (l as Line).qty > 0;
 
 type CartCtx = {
   lines: Line[];
@@ -19,6 +24,24 @@ const Ctx = createContext<CartCtx | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<Line[]>([]);
+  const loaded = useRef(false);
+
+  // The cart survives a refresh / reopening the app: restore it, then keep it saved
+  useEffect(() => {
+    AsyncStorage.getItem(KEY)
+      .then((raw) => {
+        const stored = raw ? (JSON.parse(raw) as unknown) : [];
+        if (Array.isArray(stored)) setLines((now) => (now.length ? now : stored.filter(isLine))); // keep anything added meanwhile
+      })
+      .catch(() => {})
+      .finally(() => {
+        loaded.current = true;
+      });
+  }, []);
+
+  useEffect(() => {
+    if (loaded.current) AsyncStorage.setItem(KEY, JSON.stringify(lines)).catch(() => {});
+  }, [lines]);
   const { find: findProduct } = useProducts();
 
   const value = useMemo<CartCtx>(() => {

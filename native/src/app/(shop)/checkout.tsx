@@ -4,16 +4,15 @@ import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-nativ
 import { Glass } from "@/components/Glass";
 import { Icon, IconName } from "@/components/Icon";
 import { Media } from "@/components/ProductCard";
-import { ActionBar, Header, Screen } from "@/components/Screen";
+import { ActionBar, Screen } from "@/components/Screen";
 import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
 import { useProducts } from "@/lib/products";
 import { useAuth } from "@/lib/auth";
 import { money, useCart } from "@/lib/cart";
-import { useMainButton, useTelegram, haptic } from "@/lib/telegram";
+import { haptic } from "@/lib/telegram";
 import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
-import { useGoBack } from "@/lib/nav";
 
 type Opt = { id: string; icon: string; price?: number };
 
@@ -48,8 +47,6 @@ function OptionList({ options, value, onChange, prefix }: { options: readonly Op
 const H = ({ children }: { children: string }) => <Text className="text-base font-bold text-ink">{children}</Text>;
 
 export default function Checkout() {
-  const back = useGoBack();
-  const { inTelegram } = useTelegram();
   const [placing, setPlacing] = useState(false);
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
@@ -68,16 +65,14 @@ export default function Checkout() {
       router.replace({ pathname: "/success", params: { total: total.toFixed(2), pay } });
     }, 900);
   };
-  const native = useMainButton({ text: `${placing ? t("checkout.processing") : t("checkout.place")} · ${money(total)}`, onPress: placeOrder, visible: lines.length > 0, loading: placing });
   if (ready && !session) return <Redirect href="/login?redirect=/checkout" />;
-  const hBtn = "h-10 w-10 items-center justify-center rounded-xl border border-white/30 bg-white/20";
-
+  
   return (
     <>
       <Screen
-        withActionBar={!native}
-        header={<Header title={t("checkout.title")} left={inTelegram ? <View className="h-10 w-10" /> : <Pressable onPress={back} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
-        contentClassName="gap-5 pt-4"
+        title={t("checkout.title")}
+        withActionBar
+        contentClassName="gap-5 pt-2"
       >
         <CheckoutSteps step={2} />
 
@@ -129,7 +124,6 @@ export default function Checkout() {
         </View>
       </Screen>
 
-      {!native ? (
       <ActionBar>
         <View className="flex-1">
           <Text className="text-[11px] text-soft">{t("common.totalAll")}</Text>
@@ -144,7 +138,6 @@ export default function Checkout() {
           <Text className="text-[14px] font-bold text-white">{placing ? t("checkout.processing") : t("checkout.place")}</Text>
         </Pressable>
       </ActionBar>
-      ) : null}
     </>
   );
 }
