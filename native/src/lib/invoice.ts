@@ -268,7 +268,7 @@ type TgDownload = {
   downloadFile?: (p: { url: string; file_name: string }, cb?: (accepted: boolean) => void) => void;
 };
 
-/** Where invoices are hosted for Telegram's downloadFile (see cloudflare/invoice-worker). Empty = not configured. */
+/** Where invoices are hosted for Telegram's downloadFile (see backend/, POST /invoice). Empty = not configured. */
 const INVOICE_API = (process.env.EXPO_PUBLIC_INVOICE_API ?? "").replace(/\/$/, "");
 
 /** Upload the PDF or PNG to the invoice server; resolves to its temporary https URL. */

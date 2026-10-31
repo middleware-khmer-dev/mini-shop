@@ -24,7 +24,7 @@ Without it, a demo (mock) login is used.
 - `src/components/Glass.tsx` glassmorphism surfaces (expo-blur) and backdrop
 
 ## Products API
-Products load from `EXPO_PUBLIC_PRODUCTS_URL`; the deployed site uses our own API (`cloudflare/api-worker`, with an admin page at `/admin` to manage products and pictures), and without the variable the app falls back to `https://fakestoreapi.com/products`.
+Products load from `EXPO_PUBLIC_PRODUCTS_URL`; the deployed site uses our own API (the Python backend in `../backend`, with an admin page at `/admin` to manage products and pictures), and without the variable the app falls back to `https://fakestoreapi.com/products`.
 Fields used: `id, title, price, description, category, image, rating{rate,count}`. Categories are derived from the data.
 If the request fails, a few sample products are shown with a retry banner.
 
@@ -41,7 +41,7 @@ Paying saves an order on the device (`src/lib/orders.tsx`; items are a snapshot)
 
 Inside Telegram the in-app browser usually ignores files a page generates itself, and Telegram's own `downloadFile` needs an https URL on a server (there is none here). So there the invoice button first opens the system share sheet with the real PDF/PNG file (save to Files, send to a chat); if the client has no share sheet, a full-screen picture of the invoice is shown to press-and-hold to save (or screenshot). In a normal browser the file is downloaded directly. For a true one-tap save inside Telegram you need a small server that hosts the PDF at an https URL, then call `Telegram.WebApp.downloadFile`.
 
-With `EXPO_PUBLIC_INVOICE_API` set (it is, in the Pages workflow), the PDF button inside Telegram 8.0+ uploads the PDF to the Cloudflare Worker in `../cloudflare/invoice-worker` and opens Telegram's own download dialog (`downloadFile`), so no browser is needed. If the Worker cannot be reached it falls back to the share sheet / picture above.
+With `EXPO_PUBLIC_INVOICE_API` set (it is, in the Pages workflow), the PDF button inside Telegram 8.0+ uploads the PDF to the Python backend (`../backend`, `POST /invoice`) and opens Telegram's own download dialog (`downloadFile`), so no browser is needed. If the backend cannot be reached it falls back to the share sheet / picture above.
 
 ## Favorites
 The heart on a product card or the product page toggles a favorite (saved in `mini_shop_favorites`, survives reopening the app). Account → Favorites lists them at `/favorites`.
@@ -56,7 +56,7 @@ Account → Delivery addresses (`/address`) is an address book: add as many as n
 On a product page, the Reviews tab lets a signed-in customer rate (1-5 stars) and comment; one review per customer per product, which they can edit or delete. Guests see a sign-in button. The product's rating and review count (also on the cards) combine the catalog's numbers with the reviews written here. Reviews are stored on the device (`mini_shop_reviews`), so other customers' devices do not see them until a backend is added.
 
 ## Orders
-Pay now sends the order to our API (`EXPO_PUBLIC_ORDERS_API`, the same Worker as the products): the server prices it from its own product list, gives it the number and stores it. The customer's name and phone come from the signed-in account, the address from the address book, plus the note. The success page shows the live status (waiting for confirmation / confirmed / on the way / delivered / cancelled; tap it to refresh), which an admin sets in the admin page. If the server cannot be reached nothing is placed and an error is shown. Without `EXPO_PUBLIC_ORDERS_API` (local development) orders stay on the device only. Payment itself (KHQR / card) is still not collected.
+Pay now sends the order to our API (`EXPO_PUBLIC_ORDERS_API`, the same backend as the products): the server prices it from its own product list, gives it the number and stores it. The customer's name and phone come from the signed-in account, the address from the address book, plus the note. The success page shows the live status (waiting for confirmation / confirmed / on the way / delivered / cancelled; tap it to refresh), which an admin sets in the admin page. If the server cannot be reached nothing is placed and an error is shown. Without `EXPO_PUBLIC_ORDERS_API` (local development) orders stay on the device only. Payment itself (KHQR / card) is still not collected.
 
 ### Tracking an order
 Account → My orders (`/orders`) lists every order placed on this device with its latest status (looked up from the server when the page opens, or with Refresh status). Tapping an order opens its invoice page, which shows a progress tracker (placed → confirmed → on the way → delivered, or cancelled) and re-checks the server every 30 seconds while the order is still open. Orders are kept per device, so the list is empty on a new phone or after clearing app data; an account-based history needs real customer accounts.
@@ -68,4 +68,4 @@ Cash on delivery or QR (no card). Cash is only possible when the selected addres
 Standard delivery costs the fee for the distance between the shop and the address's map pin (steps set in the admin page's Settings; defaults $1 up to 3 km, $1.50 up to 5, $2.50 up to 10, $4 up to 25, $6 farther); Express adds a fixed extra ($2.50 by default). The checkout shows both prices and the distance, and the server recomputes the fee when the order is placed. An address without a pin pays the highest step, with a hint to pick the location on the map.
 
 ### Pay 50% now, 50% on delivery
-A third payment choice: half of the total is paid by QR when ordering (the order page shows the QR picture and the deposit amount) and the rest in cash when the goods arrive. Only addresses with a map pin inside the cash radius can use it, because the remainder is cash. The admin marks the deposit received (and later the full payment) on the order, and the customer sees "Received ... still due on delivery" or "Paid in full". The percentage is `DEPOSIT_PERCENT` in `src/data/shop.ts` (and in the Worker).
+A third payment choice: half of the total is paid by QR when ordering (the order page shows the QR picture and the deposit amount) and the rest in cash when the goods arrive. Only addresses with a map pin inside the cash radius can use it, because the remainder is cash. The admin marks the deposit received (and later the full payment) on the order, and the customer sees "Received ... still due on delivery" or "Paid in full". The percentage is `DEPOSIT_PERCENT` in `src/data/shop.ts` (and in `backend/app/logic.py`).

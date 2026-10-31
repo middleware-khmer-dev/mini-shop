@@ -1,6 +1,6 @@
 import type { Order } from "@/lib/orders";
 
-/** Where orders are placed (see cloudflare/api-worker). Empty = orders only stay on this device. */
+/** Where orders are placed (see backend/). Empty = orders only stay on this device. */
 export const ORDERS_API = (process.env.EXPO_PUBLIC_ORDERS_API ?? "").replace(/\/$/, "");
 
 export type PlaceOrderInput = {
