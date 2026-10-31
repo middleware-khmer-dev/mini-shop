@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS orders (
   subtotal REAL NOT NULL,
   shipping REAL NOT NULL,
   total REAL NOT NULL,
-  items TEXT NOT NULL             -- JSON: [{productId, name, price, qty, variant}]
+  items TEXT NOT NULL,            -- JSON: [{productId, name, price, qty, variant}]
+  paid REAL NOT NULL DEFAULT 0    -- money received so far (set by the admin); total - paid is still due
 );
 CREATE INDEX IF NOT EXISTS orders_created ON orders (created_at DESC);
+
+-- added later to an existing database:
+-- ALTER TABLE orders ADD COLUMN paid REAL NOT NULL DEFAULT 0;

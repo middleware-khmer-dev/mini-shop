@@ -1,5 +1,40 @@
 // Shop settings (set in the admin page): where the shop is, how far it delivers for cash, and the QR picture to pay to.
-export const DEFAULT_SETTINGS = { shop: { lat: 11.5564, lng: 104.9282 }, radiusKm: 10, qrImage: "" }; // Phnom Penh until set
+// Delivery fee by distance from the shop: the first row whose upToKm is not exceeded; the last row (upToKm null) is "farther than that".
+export const DEFAULT_TIERS = [
+  { upToKm: 3, fee: 1 },
+  { upToKm: 5, fee: 1.5 },
+  { upToKm: 10, fee: 2.5 },
+  { upToKm: 25, fee: 4 },
+  { upToKm: null, fee: 6 },
+];
+export const DEFAULT_SETTINGS = { shop: { lat: 11.5564, lng: 104.9282 }, radiusKm: 10, qrImage: "", tiers: DEFAULT_TIERS, expressExtra: 2.5 }; // Phnom Penh until set
+
+const cleanTiers = (t) => {
+  if (!Array.isArray(t) || t.length < 1 || t.length > 10) return null;
+  const out = [];
+  let prev = 0;
+  for (let i = 0; i < t.length; i++) {
+    const fee = Number(t[i]?.fee);
+    if (!Number.isFinite(fee) || fee < 0 || fee > 1000) return null;
+    const last = i === t.length - 1;
+    if (last) {
+      out.push({ upToKm: null, fee: Math.round(fee * 100) / 100 });
+    } else {
+      const km = Number(t[i]?.upToKm);
+      if (!Number.isFinite(km) || km <= prev || km > 1000) return null; // must grow from row to row
+      out.push({ upToKm: Math.round(km * 10) / 10, fee: Math.round(fee * 100) / 100 });
+      prev = km;
+    }
+  }
+  return out;
+};
+
+/** Delivery fee for a distance (null = unknown, which pays the highest row), plus the express surcharge. */
+export function shippingFees(km, settings) {
+  const tiers = settings.tiers;
+  const tier = km == null ? tiers[tiers.length - 1] : tiers.find((t) => t.upToKm != null && km <= t.upToKm) ?? tiers[tiers.length - 1];
+  return { standard: tier.fee, express: Math.round((tier.fee + settings.expressExtra) * 100) / 100 };
+}
 
 export async function loadSettings(env) {
   try {
@@ -8,6 +43,8 @@ export async function loadSettings(env) {
       shop: Number.isFinite(s?.shop?.lat) && Number.isFinite(s?.shop?.lng) ? { lat: s.shop.lat, lng: s.shop.lng } : DEFAULT_SETTINGS.shop,
       radiusKm: Number.isFinite(s?.radiusKm) && s.radiusKm > 0 ? s.radiusKm : DEFAULT_SETTINGS.radiusKm,
       qrImage: typeof s?.qrImage === "string" ? s.qrImage : "",
+      tiers: cleanTiers(s?.tiers) ?? DEFAULT_TIERS,
+      expressExtra: Number.isFinite(s?.expressExtra) && s.expressExtra >= 0 ? s.expressExtra : DEFAULT_SETTINGS.expressExtra,
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -23,7 +60,11 @@ export function cleanSettings(input, origin) {
   if (!Number.isFinite(radiusKm) || radiusKm < 0.5 || radiusKm > 1000) return { error: "bad_radius" };
   const qr = typeof input?.qrImage === "string" ? input.qrImage.trim() : "";
   if (qr && !(/^https:\/\/[^\s]{1,480}$/.test(qr) || qr.startsWith(`${origin}/img/`))) return { error: "bad_qr" };
-  return { settings: { shop: { lat, lng }, radiusKm: Math.round(radiusKm * 10) / 10, qrImage: qr } };
+  const tiers = cleanTiers(input?.tiers);
+  if (!tiers) return { error: "bad_tiers" };
+  const extra = Number(input?.expressExtra);
+  if (!Number.isFinite(extra) || extra < 0 || extra > 1000) return { error: "bad_express" };
+  return { settings: { shop: { lat, lng }, radiusKm: Math.round(radiusKm * 10) / 10, qrImage: qr, tiers, expressExtra: Math.round(extra * 100) / 100 } };
 }
 
 /** Straight-line distance in km between two points (haversine). */
@@ -37,8 +78,10 @@ export function distanceKm(a, b) {
 // product list, so a customer cannot change what they pay. Admins list orders and change their status.
 
 const ALLOWED_ORIGINS = ["https://middleware-khmer-dev.github.io"];
-const SHIPPING = { standard: 1.5, express: 4 }; // keep in step with SHIPPING_OPTIONS in the app
-const PAYMENTS = ["cod", "khqr"]; // cash on delivery (only near the shop) or QR
+const SHIPPING_IDS = ["standard", "express"]; // the delivery fee comes from the settings (by distance)
+const PAYMENTS = ["cod", "khqr", "deposit"]; // cash on delivery (only near the shop), QR, or a deposit by QR now + the rest in cash on delivery
+const DEPOSIT_PERCENT = 50; // keep in step with DEPOSIT_PERCENT in the app
+const depositOf = (total) => Math.round(total * DEPOSIT_PERCENT) / 100;
 export const STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
 const json = (status, body, headers = {}) =>
@@ -71,7 +114,7 @@ function buildOrder(input, products, settings) {
   if (!name) return { error: "name_required" };
   if (!/^[0-9+\-\s()]{5,30}$/.test(phone)) return { error: "bad_phone" };
   if (!address) return { error: "address_required" };
-  if (!(input.shippingId in SHIPPING)) return { error: "bad_shipping" };
+  if (!SHIPPING_IDS.includes(input.shippingId)) return { error: "bad_shipping" };
   if (!PAYMENTS.includes(input.payMethod)) return { error: "bad_payment" };
   if (!Array.isArray(input.items) || input.items.length === 0 || input.items.length > 50) return { error: "bad_items" };
 
@@ -94,11 +137,13 @@ function buildOrder(input, products, settings) {
       lng = null;
     }
   }
-  // cash is only for deliveries within the radius around the shop; farther (or unknown) places pay by QR
-  if (input.payMethod === "cod" && (lat == null || distanceKm(settings.shop, { lat, lng }) > settings.radiusKm)) return { error: "cash_not_allowed" };
+  // cash (also the rest of a deposit) is only for deliveries within the radius around the shop; farther (or unknown) places pay by QR
+  if ((input.payMethod === "cod" || input.payMethod === "deposit") && (lat == null || distanceKm(settings.shop, { lat, lng }) > settings.radiusKm)) return { error: "cash_not_allowed" };
   const subtotal = money(items.reduce((s, i) => s + i.price * i.qty, 0));
-  const shipping = SHIPPING[input.shippingId];
-  return { order: { name, phone, address, lat, lng, note: str(input.note, 500), shipId: input.shippingId, payMethod: input.payMethod, items, subtotal, shipping, total: money(subtotal + shipping) } };
+  const km = lat == null ? null : distanceKm(settings.shop, { lat, lng });
+  const shipping = shippingFees(km, settings)[input.shippingId];
+  const total = money(subtotal + shipping);
+  return { order: { name, phone, address, lat, lng, note: str(input.note, 500), shipId: input.shippingId, payMethod: input.payMethod, items, subtotal, shipping, total, deposit: input.payMethod === "deposit" ? depositOf(total) : 0 } };
 }
 
 const view = (r) => ({
@@ -114,6 +159,8 @@ const view = (r) => ({
   subtotal: r.subtotal,
   shipping: r.shipping,
   total: r.total,
+  paid: r.paid,
+  deposit: r.pay_method === "deposit" ? depositOf(r.total) : 0,
   items: JSON.parse(r.items),
 });
 
@@ -141,11 +188,11 @@ export async function publicOrders(request, env, url, loadProducts) {
       const id = `MS${100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000)}`;
       try {
         await env.DB.prepare(
-          "INSERT INTO orders (id, token, created_at, status, customer_name, phone, address, lat, lng, note, ship_id, pay_method, subtotal, shipping, total, items) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO orders (id, token, created_at, status, customer_name, phone, address, lat, lng, note, ship_id, pay_method, subtotal, shipping, total, items, paid) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
         )
           .bind(id, token, createdAt, order.name, order.phone, order.address, order.lat, order.lng, order.note, order.shipId, order.payMethod, order.subtotal, order.shipping, order.total, JSON.stringify(order.items))
           .run();
-        return json(200, { id, token, createdAt, status: "pending", items: order.items, subtotal: order.subtotal, shipping: order.shipping, total: order.total, ...(order.payMethod === "khqr" && settings.qrImage ? { qrImage: settings.qrImage } : {}) }, h);
+        return json(200, { id, token, createdAt, status: "pending", items: order.items, subtotal: order.subtotal, shipping: order.shipping, total: order.total, deposit: order.deposit, paid: 0, ...((order.payMethod === "khqr" || order.payMethod === "deposit") && settings.qrImage ? { qrImage: settings.qrImage } : {}) }, h);
       } catch (e) {
         if (!/UNIQUE|constraint/i.test(String(e?.message))) return json(500, { error: "could_not_save" }, h);
       }
@@ -164,17 +211,17 @@ export async function publicOrders(request, env, url, loadProducts) {
     const lat = Number(body?.location?.lat);
     const lng = Number(body?.location?.lng);
     const settings = await loadSettings(env);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return json(200, { cashAllowed: false, radiusKm: settings.radiusKm, distanceKm: null }, h);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return json(200, { cashAllowed: false, radiusKm: settings.radiusKm, distanceKm: null, fees: shippingFees(null, settings) }, h);
     const km = distanceKm(settings.shop, { lat, lng });
-    return json(200, { cashAllowed: km <= settings.radiusKm, radiusKm: settings.radiusKm, distanceKm: Math.round(km * 10) / 10 }, h);
+    return json(200, { cashAllowed: km <= settings.radiusKm, radiusKm: settings.radiusKm, distanceKm: Math.round(km * 10) / 10, fees: shippingFees(km, settings) }, h);
   }
 
   const m = url.pathname.match(/^\/orders\/(MS\d{6})$/);
   if (request.method === "GET" && m) {
-    const row = await env.DB.prepare("SELECT id, token, status, created_at, total FROM orders WHERE id = ?").bind(m[1]).first();
+    const row = await env.DB.prepare("SELECT id, token, status, created_at, total, paid, pay_method FROM orders WHERE id = ?").bind(m[1]).first();
     // the same answer whether the order is missing or the token is wrong
     if (!row || !(await sameSecret(request.headers.get("x-order-token") || "", row.token))) return json(404, { error: "not_found" }, h);
-    return json(200, { id: row.id, status: row.status, createdAt: row.created_at, total: row.total }, h);
+    return json(200, { id: row.id, status: row.status, createdAt: row.created_at, total: row.total, paid: row.paid, deposit: row.pay_method === "deposit" ? depositOf(row.total) : 0 }, h);
   }
   return json(404, { error: "not_found" }, h);
 }
@@ -191,9 +238,15 @@ export async function adminOrders(request, env, path, url) {
   const m = path.match(/^\/orders\/(MS\d{6})$/);
   if (m && request.method === "PATCH") {
     const body = await request.json().catch(() => null);
-    if (!STATUSES.includes(body?.status)) return json(400, { error: "bad_status" });
-    const r = await env.DB.prepare("UPDATE orders SET status = ? WHERE id = ?").bind(body.status, m[1]).run();
-    if (!r.meta?.changes) return json(404, { error: "not_found" });
+    const row0 = await env.DB.prepare("SELECT * FROM orders WHERE id = ?").bind(m[1]).first();
+    if (!row0) return json(404, { error: "not_found" });
+    const hasStatus = body && body.status !== undefined;
+    const hasPaid = body && body.paid !== undefined;
+    if (!hasStatus && !hasPaid) return json(400, { error: "nothing_to_change" });
+    if (hasStatus && !STATUSES.includes(body.status)) return json(400, { error: "bad_status" });
+    const paid = hasPaid ? Number(body.paid) : row0.paid;
+    if (!Number.isFinite(paid) || paid < 0 || paid > row0.total) return json(400, { error: "bad_paid" }); // money received can be 0 up to the total
+    await env.DB.prepare("UPDATE orders SET status = ?, paid = ? WHERE id = ?").bind(hasStatus ? body.status : row0.status, Math.round(paid * 100) / 100, m[1]).run();
     const row = await env.DB.prepare("SELECT * FROM orders WHERE id = ?").bind(m[1]).first();
     return json(200, view(row));
   }
