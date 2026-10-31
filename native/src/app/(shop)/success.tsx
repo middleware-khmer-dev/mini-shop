@@ -9,6 +9,7 @@ import { DownloadKind, InvoiceLabels, downloadInvoice } from "@/lib/invoice";
 import { useTelegram } from "@/lib/telegram";
 import { Order, OrderItem, useOrders } from "@/lib/orders";
 import { money } from "@/lib/cart";
+import { DEPOSIT_PERCENT } from "@/data/shop";
 import { ORDERS_API, fetchOrderStatus } from "@/lib/api";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -53,7 +54,7 @@ export default function Invoice() {
   // ask the server where the order is now (confirmed, shipped, ...)
   const refreshStatus = () => {
     if (!ORDERS_API || !order || !token) return;
-    fetchOrderStatus(order.id, token).then((s) => setStatus(order.id, s.status)).catch(() => {});
+    fetchOrderStatus(order.id, token).then((s) => setStatus(order.id, s.status, s.paid)).catch(() => {});
   };
   useEffect(refreshStatus, [order?.id, token]);
   // keep checking while the order is still on its way
@@ -97,6 +98,11 @@ export default function Invoice() {
         {order.status ? (
           <View className="mt-1 w-full items-center gap-2">
             <OrderTracker status={order.status} />
+            {order.paid != null && order.status !== "cancelled" ? (
+              <Text className="text-[12.5px] font-semibold text-ink">
+                {order.paid >= order.total ? t("pay.paidFull") : order.paid > 0 ? t("pay.paidPart", { paid: money(order.paid), due: money(order.total - order.paid) }) : order.payMethod === "cod" ? t("invoice.status.cod") : t("pay.paidNone")}
+              </Text>
+            ) : null}
             <Pressable onPress={refreshStatus} accessibilityLabel={t("order.refresh")} className="rounded-full bg-white/80 px-4 py-1.5">
               <Text className="text-[12px] font-semibold text-soft">{t("order.refresh")}</Text>
             </Pressable>
@@ -104,7 +110,7 @@ export default function Invoice() {
         ) : null}
       </View>
 
-      {order.payMethod === "khqr" && order.status !== "cancelled" ? (
+      {(order.payMethod === "khqr" || order.payMethod === "deposit") && order.status !== "cancelled" && !(order.paid && order.paid >= (order.payMethod === "deposit" ? order.deposit ?? order.total : order.total)) ? (
         <View className="w-full max-w-[440px] items-center gap-2 rounded-3xl bg-white p-5 shadow-lg shadow-black/10">
           <Text className="text-[15px] font-extrabold text-ink">{t("qr.title")}</Text>
           {order.qrImage ? (
@@ -112,8 +118,9 @@ export default function Invoice() {
           ) : (
             <Text className="text-center text-[13px] leading-5 text-soft">{t("qr.none")}</Text>
           )}
-          <Text className="text-[12px] text-soft">{t("qr.amount")}</Text>
-          <Text className="text-[22px] font-extrabold text-ink">{money(order.total)}</Text>
+          <Text className="text-[12px] text-soft">{order.payMethod === "deposit" ? t("qr.deposit", { p: DEPOSIT_PERCENT }) : t("qr.amount")}</Text>
+          <Text className="text-[22px] font-extrabold text-ink">{money(order.payMethod === "deposit" ? order.deposit ?? order.total : order.total)}</Text>
+          {order.payMethod === "deposit" ? <Text className="text-center text-[12.5px] font-semibold text-ink">{t("qr.rest", { rest: money(order.total - (order.deposit ?? 0)) })}</Text> : null}
           <Text className="text-center text-[12px] leading-5 text-soft">{t("qr.note")}</Text>
         </View>
       ) : null}

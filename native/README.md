@@ -66,3 +66,6 @@ Cash on delivery or QR (no card). Cash is only possible when the selected addres
 
 ### Delivery fee by distance
 Standard delivery costs the fee for the distance between the shop and the address's map pin (steps set in the admin page's Settings; defaults $1 up to 3 km, $1.50 up to 5, $2.50 up to 10, $4 up to 25, $6 farther); Express adds a fixed extra ($2.50 by default). The checkout shows both prices and the distance, and the server recomputes the fee when the order is placed. An address without a pin pays the highest step, with a hint to pick the location on the map.
+
+### Pay 50% now, 50% on delivery
+A third payment choice: half of the total is paid by QR when ordering (the order page shows the QR picture and the deposit amount) and the rest in cash when the goods arrive. Only addresses with a map pin inside the cash radius can use it, because the remainder is cash. The admin marks the deposit received (and later the full payment) on the order, and the customer sees "Received ... still due on delivery" or "Paid in full". The percentage is `DEPOSIT_PERCENT` in `src/data/shop.ts` (and in the Worker).

@@ -34,7 +34,7 @@ export default function MyOrders() {
     const open = orders.filter((o) => o.token && !isFinal(o.status));
     if (open.length === 0) return;
     setRefreshing(true);
-    await Promise.all(open.map((o) => fetchOrderStatus(o.id, o.token!).then((s) => setStatus(o.id, s.status)).catch(() => {})));
+    await Promise.all(open.map((o) => fetchOrderStatus(o.id, o.token!).then((s) => setStatus(o.id, s.status, s.paid)).catch(() => {})));
     setRefreshing(false);
   }, [orders, setStatus]);
 

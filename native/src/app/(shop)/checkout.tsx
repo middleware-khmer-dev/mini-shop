@@ -5,7 +5,7 @@ import { Glass } from "@/components/Glass";
 import { Icon, IconName } from "@/components/Icon";
 import { Media } from "@/components/ProductCard";
 import { ActionBar, Screen } from "@/components/Screen";
-import { PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
+import { DEPOSIT_PERCENT, PAYMENT_OPTIONS, SHIPPING_OPTIONS } from "@/data/shop";
 import { useProducts } from "@/lib/products";
 import { useAuth } from "@/lib/auth";
 import { money, useCart } from "@/lib/cart";
@@ -80,7 +80,7 @@ export default function Checkout() {
   // while the distance is being checked cash stays selectable (the Pay button waits); once known it is on or off
   const cashOk = !ORDERS_API || checking || (cash.state === "ok" && cash.quote?.cashAllowed === true);
   useEffect(() => {
-    if (!cashOk && pay === "cod") setPay("khqr"); // cash no longer possible: switch to QR
+    if (!cashOk && (pay === "cod" || pay === "deposit")) setPay("khqr"); // cash no longer possible: switch to QR
   }, [cashOk, pay]);
   const cashNote =
     !ORDERS_API ? ""
@@ -98,10 +98,12 @@ export default function Checkout() {
     : cash.quote?.distanceKm == null ? t("ship.nopin")
     : t("ship.byDistance", { km: cash.quote.distanceKm });
   const total = subtotal + shipping;
+  const depositNow = Math.round(total * DEPOSIT_PERCENT) / 100; // paid now by QR when "deposit" is chosen
+  const depositRest = Math.round((total - depositNow) * 100) / 100; // paid in cash on delivery
   const customer = { name: session?.user.name ?? "", phone: session?.user.phone ?? "" };
 
   const placeOrder = async () => {
-    if (placing || lines.length === 0 || !selected || (pay === "cod" && (!cashOk || checking))) return; // ignore double taps
+    if (placing || lines.length === 0 || !selected || ((pay === "cod" || pay === "deposit") && (!cashOk || checking))) return; // ignore double taps
     setPlacing(true);
     setError("");
     haptic("medium");
@@ -118,7 +120,7 @@ export default function Checkout() {
       if (ORDERS_API) {
         // the server works out the prices itself and gives the order its number
         const placed = await placeRemote({ ...base, items: lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant })) });
-        order = { ...base, ...(placed.qrImage ? { qrImage: placed.qrImage } : {}), id: placed.id, createdAt: placed.createdAt, items: placed.items, subtotal: placed.subtotal, shipping: placed.shipping, total: placed.total, token: placed.token, status: placed.status };
+        order = { ...base, ...(placed.qrImage ? { qrImage: placed.qrImage } : {}), deposit: placed.deposit ?? 0, paid: placed.paid ?? 0, id: placed.id, createdAt: placed.createdAt, items: placed.items, subtotal: placed.subtotal, shipping: placed.shipping, total: placed.total, token: placed.token, status: placed.status };
       } else {
         // no server configured (local development): keep the order on this device only
         order = {
@@ -184,9 +186,9 @@ export default function Checkout() {
         {shipNote ? <Text className="-mt-2 px-1 text-[12px] leading-5 text-soft">{shipNote}</Text> : null}
 
         <H>{t("checkout.payment")}</H>
-        <OptionList prefix="pay" options={PAYMENT_OPTIONS} value={pay} onChange={setPay} disabled={cashOk ? [] : ["cod"]} />
+        <OptionList prefix="pay" options={PAYMENT_OPTIONS} value={pay} onChange={setPay} disabled={cashOk ? [] : ["cod", "deposit"]} />
         {cashNote ? <Text className="-mt-2 px-1 text-[12px] leading-5 text-soft">{cashNote}</Text> : null}
-        <Text className="-mt-2 px-1 text-[12px] leading-5 text-soft">{t(`checkout.hint.${pay}`)}</Text>
+        <Text className="-mt-2 px-1 text-[12px] leading-5 text-soft">{pay === "deposit" ? t("checkout.hint.deposit", { now: money(depositNow), rest: money(depositRest), p: DEPOSIT_PERCENT }) : t(`checkout.hint.${pay}`)}</Text>
 
         <H>{t("checkout.items")}</H>
         <Glass className="gap-3 rounded-2xl p-3">
@@ -230,9 +232,9 @@ export default function Checkout() {
           <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
         </View>
         <Pressable
-          disabled={lines.length === 0 || placing || !selected || (pay === "cod" && checking)}
+          disabled={lines.length === 0 || placing || !selected || ((pay === "cod" || pay === "deposit") && checking)}
           onPress={placeOrder}
-          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 || placing || !selected || (pay === "cod" && checking) ? "opacity-70" : ""}`}
+          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 || placing || !selected || ((pay === "cod" || pay === "deposit") && checking) ? "opacity-70" : ""}`}
         >
           {placing ? <ActivityIndicator color="#fff" size="small" /> : null}
           <Text className="text-[14px] font-bold text-white">{placing ? t("checkout.processing") : t("checkout.place")}</Text>

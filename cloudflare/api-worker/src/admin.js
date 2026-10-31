@@ -241,6 +241,20 @@ export const ADMIN_JS = String.raw`
       api("PATCH", "/orders/" + o.id, { status: sel.value }).then(function (u) { say("Status: " + u.status, true); showOrder(u, filter); })
         .catch(function (e) { save.disabled = false; say("Could not save: " + e.message); });
     } });
+    function setPaid(amount) {
+      api("PATCH", "/orders/" + o.id, { paid: amount }).then(function (u) { say("Payment updated", true); showOrder(u, filter); })
+        .catch(function (e) { say("Could not save: " + e.message); });
+    }
+    var due = Math.max(0, o.total - o.paid);
+    var payKids = [
+      el("div", { class: "title", style: "margin-top:4px", text: "Total " + money(o.total) + " · pay: " + (o.payMethod === "deposit" ? "50% deposit by QR + rest in cash on delivery" : o.payMethod) }),
+      el("div", { text: "Received so far " + money(o.paid) + " · still due " + money(due) + (o.payMethod === "deposit" && o.paid < o.deposit ? " (deposit " + money(o.deposit) + " not received yet)" : "") }),
+      el("div", { class: "gap", style: "margin-top:8px" }, [
+        o.payMethod === "deposit" ? el("button", { class: "ghost", text: "Mark deposit received (" + money(o.deposit) + ")", onclick: function () { setPaid(o.deposit); } }) : null,
+        el("button", { class: "ghost", text: "Mark fully paid (" + money(o.total) + ")", onclick: function () { setPaid(o.total); } }),
+        o.paid > 0 ? el("button", { class: "danger", text: "Reset to $0", onclick: function () { setPaid(0); } }) : null,
+      ]),
+    ];
     var lines = o.items.map(function (i) {
       return el("div", { class: "row", style: "justify-content:space-between;margin:4px 0" }, [
         el("div", { class: "grow", text: i.name + (i.variant ? " (" + i.variant + ")" : "") + "  x" + i.qty }),
@@ -263,7 +277,9 @@ export const ADMIN_JS = String.raw`
     kids = kids.concat(lines);
     kids.push(
       el("div", { class: "muted", text: "Subtotal " + money(o.subtotal) + " · Shipping (" + o.shippingId + ") " + money(o.shipping) }),
-      el("div", { class: "title", style: "margin-top:4px", text: "Total " + money(o.total) + " · pay: " + o.payMethod }),
+    );
+    kids = kids.concat(payKids);
+    kids.push(
       el("label", { text: "Status" }), sel,
       el("div", { class: "gap", style: "margin-top:14px" }, [save, el("button", { class: "ghost", text: "Back", onclick: function () { showOrders(filter); } })]),
     );

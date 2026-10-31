@@ -83,7 +83,11 @@ export const SHIPPING_OPTIONS = [
   { id: "express", price: 4, icon: "bolt" },
 ] as const;
 
+/** Share paid up front by QR when choosing "deposit"; the rest is paid in cash on delivery (keep in step with the server). */
+export const DEPOSIT_PERCENT = 50;
+
 export const PAYMENT_OPTIONS = [
   { id: "cod", icon: "cash" },
   { id: "khqr", icon: "qr" },
+  { id: "deposit", icon: "cash" },
 ] as const;

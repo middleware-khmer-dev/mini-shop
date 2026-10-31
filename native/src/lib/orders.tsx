@@ -12,19 +12,21 @@ export type Order = {
   shipping: number;
   shippingId: string;
   total: number;
-  payMethod: string; // cod | khqr
+  payMethod: string; // cod | khqr | deposit (half by QR now, half in cash on delivery)
   customer: { name: string; phone: string };
   address: string;
   location?: { lat: number; lng: number }; // where the customer dropped the pin, if they did
   note?: string;
   qrImage?: string; // picture of the shop's payment QR, for orders paid by QR
+  deposit?: number; // for "deposit" orders: the part paid up front
+  paid?: number; // money the shop has received so far (set by the admin)
   token?: string; // secret that lets this device ask the server for the order status
   status?: string; // pending | confirmed | shipped | delivered | cancelled (from the server)
 };
 
 const KEY = "mini_shop_orders";
 
-type Ctx = { orders: Order[]; addOrder: (o: Order) => void; setStatus: (id: string, status: string) => void; find: (id?: string) => Order | undefined };
+type Ctx = { orders: Order[]; addOrder: (o: Order) => void; setStatus: (id: string, status: string, paid?: number) => void; find: (id?: string) => Order | undefined };
 const OrdersCtx = createContext<Ctx | null>(null);
 
 export const newOrderId = () => `MS${Math.floor(100000 + Math.random() * 900000)}`;
@@ -50,7 +52,11 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
   }, [orders]);
 
   const addOrder = useCallback((o: Order) => setOrders((prev) => [o, ...prev]), []);
-  const setStatus = useCallback((id: string, status: string) => setOrders((prev) => prev.map((o) => (o.id === id && o.status !== status ? { ...o, status } : o))), []);
+  const setStatus = useCallback(
+    (id: string, status: string, paid?: number) =>
+      setOrders((prev) => prev.map((o) => (o.id === id && (o.status !== status || (paid !== undefined && o.paid !== paid)) ? { ...o, status, ...(paid !== undefined ? { paid } : {}) } : o))),
+    [],
+  );
   const value = useMemo<Ctx>(
     () => ({ orders, addOrder, setStatus, find: (id) => orders.find((o) => o.id === id) }),
     [orders, addOrder, setStatus],
