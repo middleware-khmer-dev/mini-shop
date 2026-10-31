@@ -257,17 +257,31 @@ function saveBlob(blob: Blob, filename: string) {
 
 export type DownloadKind = "pdf" | "png";
 
-/** Download the invoice as a PDF or PNG (web). On native, shares a text summary instead. */
+export type DownloadResult =
+  | { via: "download" } // normal browser: the file was saved
+  | { via: "share" } // the system share sheet was shown (save to Files, send to a chat, ...)
+  | { via: "viewer"; imageUrl: string; width: number; height: number }; // show the picture so it can be saved by hand
+
+/**
+ * Get the invoice out of the app as a PDF or PNG.
+ *
+ * Inside Telegram the built-in browser usually ignores downloads of files the page generates
+ * itself, and Telegram's own downloadFile needs a file hosted on an https server (there is none).
+ * So inside Telegram we try the system share sheet with the real file, and if the client does not
+ * offer one we hand back the picture to show full screen (press and hold to save, or screenshot).
+ * In a normal browser the file is simply downloaded. On native it shares a text summary.
+ */
 export async function downloadInvoice(
   order: Order,
   L: InvoiceLabels,
   itemLine: (i: Order["items"][number]) => string,
   kind: DownloadKind,
-): Promise<void> {
+  opts: { inTelegram?: boolean } = {},
+): Promise<DownloadResult> {
   if (Platform.OS !== "web") {
     const lines = order.items.map((i) => `${itemLine(i)}  x${i.qty}  ${money(i.price * i.qty)}`).join("\n");
     await Share.share({ message: `${L.brand} - ${L.title} #${order.id}\n${lines}\n${L.total}: ${money(order.total)}` });
-    return;
+    return { via: "share" };
   }
   // make sure the page font is loaded before drawing
   try {
@@ -275,11 +289,26 @@ export async function downloadInvoice(
   } catch {}
   const canvas = drawInvoice(order, L, itemLine);
   const name = `invoice-${order.id}`;
-  if (kind === "pdf") {
-    saveBlob(canvasToPdf(canvas), `${name}.pdf`);
-  } else {
-    await new Promise<void>((resolve, reject) =>
-      canvas.toBlob((b) => (b ? (saveBlob(b, `${name}.png`), resolve()) : reject(new Error("png"))), "image/png"),
-    );
+  const blob: Blob =
+    kind === "pdf"
+      ? canvasToPdf(canvas)
+      : await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("png"))), "image/png"));
+  const filename = `${name}.${kind}`;
+
+  if (opts.inTelegram) {
+    const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+    try {
+      const file = new File([blob], filename, { type: blob.type });
+      if (nav.share && nav.canShare?.({ files: [file] })) {
+        await nav.share({ files: [file], title: `${L.title} #${order.id}` });
+        return { via: "share" };
+      }
+    } catch (e) {
+      if ((e as Error).name === "AbortError") return { via: "share" }; // the user closed the share sheet
+    }
+    return { via: "viewer", imageUrl: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height };
   }
+
+  saveBlob(blob, filename);
+  return { via: "download" };
 }

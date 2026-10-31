@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Icon } from "@/components/Icon";
 import { Screen } from "@/components/Screen";
 import { Lang, useI18n } from "@/lib/i18n";
 import { DownloadKind, InvoiceLabels, downloadInvoice } from "@/lib/invoice";
+import { useTelegram } from "@/lib/telegram";
 import { Order, OrderItem, useOrders } from "@/lib/orders";
 import { money } from "@/lib/cart";
 
@@ -41,6 +42,8 @@ export default function Invoice() {
   const { t, lang } = useI18n();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { find } = useOrders();
+  const { inTelegram } = useTelegram();
+  const [viewer, setViewer] = useState<{ imageUrl: string; width: number; height: number } | null>(null);
   const order = find(id);
   const [busy, setBusy] = useState<DownloadKind | null>(null);
   const [failed, setFailed] = useState(false);
@@ -62,7 +65,8 @@ export default function Invoice() {
     setFailed(false);
     setBusy(kind);
     try {
-      await downloadInvoice(order, L, itemLine, kind);
+      const res = await downloadInvoice(order, L, itemLine, kind, { inTelegram });
+      if (res.via === "viewer") setViewer({ imageUrl: res.imageUrl, width: res.width, height: res.height });
     } catch {
       setFailed(true);
     } finally {
@@ -148,7 +152,7 @@ export default function Invoice() {
           </Pressable>
         ) : null}
         {failed ? <Text className="text-center text-[12.5px] text-red-600">{t("invoice.failed")}</Text> : null}
-        <Text className="px-2 text-center text-[11.5px] leading-4 text-soft">{t("invoice.hint")}</Text>
+        {inTelegram ? <Text className="px-2 text-center text-[11.5px] leading-4 text-soft">{t("invoice.hint")}</Text> : null}
         <View className="flex-row gap-2.5">
           <Pressable onPress={() => router.replace("/home")} className="h-12 flex-1 items-center justify-center rounded-2xl border border-glass-line bg-white/70">
             <Text className="text-[13px] font-bold text-ink">{t("success.home")}</Text>
@@ -158,6 +162,24 @@ export default function Invoice() {
           </Pressable>
         </View>
       </View>
+
+      <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
+        <View className="flex-1 bg-black/70 px-3 py-10">
+          <View className="flex-1 overflow-hidden rounded-3xl bg-white">
+            <ScrollView contentContainerClassName="p-3">
+              {viewer ? (
+                <Image source={{ uri: viewer.imageUrl }} resizeMode="contain" accessibilityLabel={`${L.title} #${order.id}`} style={{ width: "100%", aspectRatio: viewer.width / viewer.height }} />
+              ) : null}
+            </ScrollView>
+            <View className="gap-2 border-t border-gray-100 p-3">
+              <Text className="text-center text-[12.5px] leading-5 text-soft">{t("invoice.holdToSave")}</Text>
+              <Pressable onPress={() => setViewer(null)} className="h-11 items-center justify-center rounded-2xl bg-[#14141f]">
+                <Text className="text-[14px] font-bold text-white">{t("invoice.close")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
