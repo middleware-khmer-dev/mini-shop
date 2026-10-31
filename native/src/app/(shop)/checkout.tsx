@@ -1,5 +1,4 @@
 import { Redirect, router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { Glass } from "@/components/Glass";
@@ -16,9 +15,8 @@ import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { Row } from "@/components/Row";
 import { useI18n } from "@/lib/i18n";
 import { newOrderId, useOrders } from "@/lib/orders";
+import { loadAddress, saveAddress } from "@/lib/address";
 import type { Place } from "@/lib/geo";
-
-const ADDRESS_KEY = "mini_shop_address";
 
 type Opt = { id: string; icon: string; price?: number };
 
@@ -66,13 +64,10 @@ export default function Checkout() {
   const [place, setPlace] = useState<Place | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
   useEffect(() => {
-    AsyncStorage.getItem(ADDRESS_KEY)
-      .then((raw) => {
-        const s = raw ? (JSON.parse(raw) as { address?: string; place?: Place | null }) : null;
-        if (s?.address) setAddress((now) => now || s.address!);
-        if (s?.place) setPlace((now) => now ?? s.place!);
-      })
-      .catch(() => {});
+    loadAddress().then((s) => {
+      if (s.address) setAddress((now) => now || s.address);
+      if (s.place) setPlace((now) => now ?? s.place);
+    });
   }, []);
   const shipping = SHIPPING_OPTIONS.find((s) => s.id === ship)?.price ?? 0;
   const total = subtotal + shipping;
@@ -99,7 +94,7 @@ export default function Checkout() {
         address: address.trim() || t("checkout.addressText"),
         ...(place ? { location: place } : {}),
       });
-      AsyncStorage.setItem(ADDRESS_KEY, JSON.stringify({ address: address.trim(), place })).catch(() => {});
+      saveAddress({ address: address.trim(), place });
       clear();
       router.replace({ pathname: "/success", params: { id } });
     }, 900);
