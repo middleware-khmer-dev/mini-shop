@@ -7,7 +7,7 @@ import { Media } from "@/components/ProductCard";
 import { ActionBar, Screen } from "@/components/Screen";
 import { useProducts } from "@/lib/products";
 import { money, useCart } from "@/lib/cart";
-import { haptic, useMainButton } from "@/lib/telegram";
+import { haptic } from "@/lib/telegram";
 import { useI18n } from "@/lib/i18n";
 
 const SIZES = ["S", "M", "L", "XL"];
@@ -41,8 +41,6 @@ export default function ProductScreen() {
     add(product.id, qty, variant);
     router.push("/cart");
   };
-  // In Telegram the Main button is "Buy now"; the in-page bar keeps favorite + add to cart
-  const native = useMainButton({ text: t("product.buyNow"), onPress: buyNow });
   const circle = "h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white shadow-md shadow-black/25";
 
   return (
@@ -53,7 +51,7 @@ export default function ProductScreen() {
             <Media product={product} className="flex-1" />
           </View>
           <View className="absolute inset-x-3 top-3 z-10 flex-row items-center justify-between md:hidden">
-            {native ? <View className="h-11 w-11" /> : <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={circle}><Icon name="back" size={18} /></Pressable>}
+            <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={circle}><Icon name="back" size={18} /></Pressable>
             <View className="flex-row gap-2">
               <Pressable onPress={() => setWish(!wish)} accessibilityLabel={t("product.wish")} className={circle}>
                 <Icon name="heart" size={18} color={wish ? "#e11d48" : "#374151"} fill={wish ? "#e11d48" : "none"} />
@@ -121,18 +119,17 @@ export default function ProductScreen() {
       </Screen>
 
       <ActionBar>
-        <View className="min-w-[64px]">
+        {/* one row, three equal-height items: price | add to cart | buy now */}
+        <View className="w-[88px] justify-center">
           <Text className="text-[11px] text-soft">{t("common.total")}</Text>
-          <Text className="text-[16px] font-extrabold text-ink">{money(product.price * qty)}</Text>
+          <Text numberOfLines={1} className="text-[17px] font-extrabold text-ink">{money(product.price * qty)}</Text>
         </View>
-        <Pressable onPress={addToCart} className="h-12 flex-1 items-center justify-center rounded-2xl border border-glass-line bg-white/80">
-          <Text className="text-[13.5px] font-bold text-ink">{added ? t("product.added") : t("card.add")}</Text>
+        <Pressable onPress={addToCart} className="h-12 flex-1 items-center justify-center rounded-2xl border border-black/15 bg-white px-2">
+          <Text numberOfLines={2} className="text-center text-[13px] font-bold leading-4 text-ink">{added ? t("product.added") : t("card.add")}</Text>
         </Pressable>
-        {!native ? (
-          <Pressable onPress={buyNow} className="h-12 flex-1 items-center justify-center rounded-2xl bg-[#14141f]">
-            <Text className="text-[13.5px] font-bold text-white">{t("product.buyNow")}</Text>
-          </Pressable>
-        ) : null}
+        <Pressable onPress={buyNow} className="h-12 flex-1 items-center justify-center rounded-2xl bg-[#14141f] px-2">
+          <Text numberOfLines={2} className="text-center text-[13px] font-bold leading-4 text-white">{t("product.buyNow")}</Text>
+        </Pressable>
       </ActionBar>
     </>
   );

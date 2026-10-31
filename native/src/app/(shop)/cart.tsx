@@ -32,7 +32,7 @@ export default function Cart() {
         header={
           <Header
             title={t("cart.title", { n: count })}
-            left={native ? <View className="h-10 w-10" /> : <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
+            left={<Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>}
             right={<Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className={hBtn}><Icon name="trash" size={18} color="#fff" /></Pressable>}
           />
         }

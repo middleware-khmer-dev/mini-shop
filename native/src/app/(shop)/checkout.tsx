@@ -66,7 +66,7 @@ export default function Checkout() {
     <>
       <Screen
         withActionBar={!native}
-        header={<Header title={t("checkout.title")} left={native ? <View className="h-10 w-10" /> : <Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
+        header={<Header title={t("checkout.title")} left={<Pressable onPress={() => router.back()} accessibilityLabel={t("common.back")} className={hBtn}><Icon name="back" size={18} color="#fff" /></Pressable>} right={<View className="h-10 w-10" />} />}
         contentClassName="gap-5 pt-4"
       >
         <H>{t("checkout.address")}</H>
