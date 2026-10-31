@@ -26,6 +26,9 @@
     "scheme": "minishop",
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "experiments": {
+      "baseUrl": "/mini-shop"
+    }
   }
 }
