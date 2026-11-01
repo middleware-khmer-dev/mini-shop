@@ -225,3 +225,12 @@ def test_admin_page_and_script(client):
     js = client.get("/admin/app.js")
     assert js.status_code == 200 and "javascript" in js.headers["content-type"] and "ms_admin" in js.text
     assert client.get("/nothing").json() == {"error": "not_found"}
+
+
+def test_rate_limits_from_env(monkeypatch):
+    from app.config import Config
+
+    monkeypatch.setenv("ADMIN_RATE", "500")
+    monkeypatch.setenv("ORDER_RATE", "oops")  # ignored: not a number
+    cfg = Config.from_env()
+    assert cfg.admin_rate == 500 and cfg.order_rate == 10 and cfg.invoice_rate == 20

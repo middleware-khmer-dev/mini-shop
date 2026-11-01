@@ -64,26 +64,34 @@ export function PillNav() {
   const translateY = hidden.interpolate({ inputRange: [0, 1], outputRange: [0, PILL_BOTTOM_SPACE + bottomInset + 30] });
   const opacity = hidden.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
-  // Phone / Telegram: compact bar stretched edge to edge along the bottom, icons only
+  // Phone / Telegram: floating pill with a gap from the screen edges and from the bottom (so it clears the
+  // phone's home indicator / rounded corners), icon + label per tab, the active tab filled
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 50, transform: [{ translateY }], opacity }}
+      style={{ position: "absolute", left: 12, right: 12, bottom: bottomInset + 8, zIndex: 50, transform: [{ translateY }], opacity }}
     >
-      <Glass
-        solid
-        className="w-full flex-row rounded-t-[26px] border-x-0 border-b-0 px-3 pt-1.5 shadow-2xl shadow-black/30"
-        style={{ paddingBottom: 10 + bottomInset }}
-      >
+      <Glass solid className="flex-row rounded-full p-1 shadow-xl shadow-black/20">
         {TABS.map((t) => {
           const active = t.key === activeKey;
           return (
             <Link key={t.key} href={t.href as never} asChild>
-              <Pressable accessibilityRole="button" accessibilityLabel={tr(t.label)} className="h-11 flex-1 items-center justify-center">
-                <View className={`h-10 w-16 items-center justify-center rounded-full ${active ? "bg-[#14141f]/90" : ""}`}>
-                  <Icon name={t.icon} size={22} color={active ? "#fff" : "#6b7280"} />
-                  {t.key === "cart" ? badge(count) : null}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={tr(t.label)}
+                className={`h-[44px] flex-1 items-center justify-center rounded-full ${active ? "bg-[#14141f]/90" : ""}`}
+              >
+                <View>
+                  <Icon name={t.icon} size={20} color={active ? "#fff" : "#6b7280"} />
+                  {t.key === "cart" && count > 0 ? (
+                    <View className="absolute -right-2 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1">
+                      <Text className="text-[9px] font-extrabold text-white">{count}</Text>
+                    </View>
+                  ) : null}
                 </View>
+                <Text numberOfLines={1} className={`text-[10px] font-semibold ${active ? "text-white" : "text-soft"}`}>
+                  {tr(t.label)}
+                </Text>
               </Pressable>
             </Link>
           );

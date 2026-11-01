@@ -38,4 +38,7 @@ class Config:
             cfg.allowed_origins = _list(env["ALLOWED_ORIGINS"])
         cfg.public_url = env.get("PUBLIC_URL", "").rstrip("/")
         cfg.trust_proxy = env.get("TRUST_PROXY", "") in ("1", "true", "yes")
+        for attr, name in (("admin_rate", "ADMIN_RATE"), ("order_rate", "ORDER_RATE"), ("invoice_rate", "INVOICE_RATE")):
+            if env.get(name, "").isdigit():
+                setattr(cfg, attr, int(env[name]))
         return cfg

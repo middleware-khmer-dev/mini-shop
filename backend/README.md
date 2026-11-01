@@ -35,6 +35,7 @@ With Docker: `docker build -t mini-shop-api backend && docker run -p 8000:8000 -
 | `DATA_DIR` | `data` (`/data` in Docker) | where the database, pictures and invoices are kept: **back this folder up** |
 | `ALLOWED_ORIGINS` | `https://middleware-khmer-dev.github.io` | comma-separated websites that may place orders and upload invoices (add `http://localhost:8081` for local web development) |
 | `PUBLIC_URL` | taken from each request | the server's public https address, used in picture and invoice links; set it when behind a proxy |
+| `ADMIN_RATE` / `ORDER_RATE` / `INVOICE_RATE` | `60` / `10` / `20` | requests per minute per IP for the admin API, placing orders and invoice uploads |
 | `TRUST_PROXY` | off | set to `1` behind a reverse proxy so rate limits use the real client IP (`X-Forwarded-For`) |
 
 Serve it over **https** (the app is on https, so browsers block a plain-http API), e.g. behind Caddy / nginx / a platform that terminates TLS, and run a single process: rate limits are kept in memory.
