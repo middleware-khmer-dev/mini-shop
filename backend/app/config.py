@@ -44,10 +44,10 @@ class Config:
         if env.get("ALLOWED_ORIGINS"):
             cfg.allowed_origins = _list(env["ALLOWED_ORIGINS"])
         cfg.public_url = env.get("PUBLIC_URL", "").rstrip("/")
-        cfg.khqr_id = env.get("KHQR_ID", "").strip()
-        cfg.khqr_account = env.get("KHQR_ACCOUNT", "").strip()
-        cfg.khqr_bank = env.get("KHQR_BANK", "").strip()
-        cfg.khqr_name = env.get("KHQR_NAME", "").strip()
+        cfg.khqr_id = env.get("KHQR_ID", cfg.khqr_id).strip()  # unset keeps the default; set to empty turns it off
+        cfg.khqr_account = env.get("KHQR_ACCOUNT", cfg.khqr_account).strip()  # unset keeps the default; set to empty turns it off
+        cfg.khqr_bank = env.get("KHQR_BANK", cfg.khqr_bank).strip()  # unset keeps the default; set to empty turns it off
+        cfg.khqr_name = env.get("KHQR_NAME", cfg.khqr_name).strip()  # unset keeps the default; set to empty turns it off
         cfg.khqr_city = env.get("KHQR_CITY", cfg.khqr_city).strip()
         if env.get("KHQR_MINUTES", "").isdigit() and int(env["KHQR_MINUTES"]) > 0:
             cfg.khqr_minutes = int(env["KHQR_MINUTES"])

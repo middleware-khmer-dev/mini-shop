@@ -236,6 +236,19 @@ def test_rate_limits_from_env(monkeypatch):
     assert cfg.admin_rate == 500 and cfg.order_rate == 10 and cfg.invoice_rate == 20
 
 
+def test_khqr_defaults_survive_from_env(monkeypatch):
+    from app.config import Config
+
+    for k in ("KHQR_ID", "KHQR_ACCOUNT", "KHQR_BANK", "KHQR_NAME"):
+        monkeypatch.delenv(k, raising=False)
+    cfg = Config.from_env()
+    assert cfg.khqr_id == "khqr@aclb" and cfg.khqr_name == "Im Sovanny"  # not set on the server: the built-in defaults apply
+    monkeypatch.setenv("KHQR_ID", "shop@abaa")
+    assert Config.from_env().khqr_id == "shop@abaa"  # the server setting wins
+    monkeypatch.setenv("KHQR_ID", "")
+    assert Config.from_env().khqr_id == ""  # set to empty: dynamic KHQR off, fixed QR picture
+
+
 # ---- dynamic KHQR -------------------------------------------------------------------------------
 def test_khqr_crc_matches_a_real_code():
     from app.khqr import crc16

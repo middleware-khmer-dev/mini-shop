@@ -18,6 +18,12 @@ const formatDate = (iso: string) => {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 const itemLine = (i: OrderItem) => (i.variant ? `${i.name} (${i.variant})` : i.name);
+/** A QR / deposit order is waiting for money: show the QR first and only issue the invoice once the shop has received it. */
+const isAwaitingPayment = (o: Order) => {
+  if ((o.payMethod !== "khqr" && o.payMethod !== "deposit") || o.status === "cancelled") return false;
+  const due = o.payMethod === "deposit" ? o.deposit ?? o.total : o.total;
+  return !(o.paid && o.paid >= due);
+};
 
 function labelsFor(order: Order, t: (k: string) => string, _lang: Lang): InvoiceLabels {
   return {
@@ -34,7 +40,7 @@ function labelsFor(order: Order, t: (k: string) => string, _lang: Lang): Invoice
     shipping: t("cart.shipping"),
     total: t("common.total"),
     payment: t("invoice.payment"),
-    status: t(`invoice.status.${order.payMethod}`),
+    status: order.paid != null && order.paid >= order.total ? t("pay.paidFull") : t(`invoice.status.${order.payMethod}`),
     thanks: t("invoice.thanks"),
     dateText: formatDate(order.createdAt),
     paymentText: t(`pay.${order.payMethod}.title`),
@@ -57,12 +63,13 @@ export default function Invoice() {
     fetchOrderStatus(order.id, token).then((s) => setStatus(order.id, s.status, s.paid)).catch(() => {});
   };
   useEffect(refreshStatus, [order?.id, token]);
-  // keep checking while the order is still on its way
+  const awaiting = !!order && isAwaitingPayment(order);
+  // keep checking while the order is still on its way (faster while we wait for the payment, so the invoice appears by itself)
   useEffect(() => {
     if (!ORDERS_API || !order || !token || isFinal(order.status)) return;
-    const timer = setInterval(refreshStatus, 30_000);
+    const timer = setInterval(refreshStatus, awaiting ? 8_000 : 30_000);
     return () => clearInterval(timer);
-  }, [order?.id, token, order?.status]);
+  }, [order?.id, token, order?.status, awaiting]);
 
   if (!order) {
     return (
@@ -110,7 +117,7 @@ export default function Invoice() {
         ) : null}
       </View>
 
-      {(order.payMethod === "khqr" || order.payMethod === "deposit") && order.status !== "cancelled" && !(order.paid && order.paid >= (order.payMethod === "deposit" ? order.deposit ?? order.total : order.total)) ? (
+      {awaiting ? (
         <View className="w-full max-w-[440px] items-center gap-2 rounded-3xl bg-white p-5 shadow-lg shadow-black/10">
           <Text className="text-[15px] font-extrabold text-ink">{t("qr.title")}</Text>
           {order.qrImage ? (
@@ -122,10 +129,12 @@ export default function Invoice() {
           <Text className="text-[22px] font-extrabold text-ink">{money(order.payMethod === "deposit" ? order.deposit ?? order.total : order.total)}</Text>
           {order.payMethod === "deposit" ? <Text className="text-center text-[12.5px] font-semibold text-ink">{t("qr.rest", { rest: money(order.total - (order.deposit ?? 0)) })}</Text> : null}
           <Text className="text-center text-[12px] leading-5 text-soft">{t("qr.note")}</Text>
+          <Text className="text-center text-[12px] font-semibold leading-5 text-ink">{t("qr.invoiceLater")}</Text>
         </View>
       ) : null}
 
-      {/* the invoice, laid out like a paper receipt */}
+      {/* the invoice, laid out like a paper receipt (issued once the payment is received) */}
+      {awaiting ? null : (
       <View className="w-full max-w-[440px] overflow-hidden rounded-3xl bg-white shadow-lg shadow-black/10">
         <View className="h-2 bg-[#14141f]" />
         <View className="gap-4 p-5">
@@ -175,8 +184,10 @@ export default function Invoice() {
           <Text className="text-[12.5px] text-soft">{L.payment}: <Text className="font-bold text-ink">{L.paymentText}</Text></Text>
         </View>
       </View>
+      )}
 
       <View className="w-full max-w-[440px] gap-2.5">
+        {awaiting ? null : (<>
         <Pressable
           disabled={busy !== null}
           onPress={() => download("pdf")}
@@ -197,6 +208,7 @@ export default function Invoice() {
         ) : null}
         {failed ? <Text className="text-center text-[12.5px] text-red-600">{t("invoice.failed")}</Text> : null}
         {inTelegram ? <Text className="px-2 text-center text-[11.5px] leading-4 text-soft">{t("invoice.hint")}</Text> : null}
+        </>)}
         <View className="flex-row gap-2.5">
           <Pressable onPress={() => router.replace("/home")} className="h-12 flex-1 items-center justify-center rounded-2xl border border-glass-line bg-white/70">
             <Text className="text-[13px] font-bold text-ink">{t("success.home")}</Text>
