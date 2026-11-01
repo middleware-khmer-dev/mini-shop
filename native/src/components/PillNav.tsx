@@ -64,7 +64,7 @@ export function PillNav() {
   const translateY = hidden.interpolate({ inputRange: [0, 1], outputRange: [0, PILL_BOTTOM_SPACE + bottomInset + 30] });
   const opacity = hidden.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
-  // Phone / Telegram: compact bar stretched edge to edge along the bottom, icons only
+  // Phone / Telegram: bar stretched edge to edge along the bottom with 50px rounded top corners, icons only
   return (
     <Animated.View
       pointerEvents="box-none"
@@ -72,7 +72,7 @@ export function PillNav() {
     >
       <Glass
         solid
-        className="w-full flex-row rounded-t-[26px] border-x-0 border-b-0 px-3 pt-1.5 shadow-2xl shadow-black/30"
+        className="w-full flex-row rounded-t-[50px] border-x-0 border-b-0 px-6 pt-2.5 shadow-2xl shadow-black/30"
         style={{ paddingBottom: 10 + bottomInset }}
       >
         {TABS.map((t) => {

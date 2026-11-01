@@ -350,7 +350,7 @@
     for (var i = 6; i >= 0; i--) { var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); days.push({ d: d, key: dayKey(d), sum: 0, n: 0 }); }
     live.forEach(function (o) { var k = dayKey(new Date(o.createdAt)); days.forEach(function (x) { if (x.key === k) { x.sum += o.total; x.n++; } }); });
     var max = Math.max.apply(null, days.map(function (x) { return x.sum; }).concat([1]));
-    var step = Math.pow(10, Math.floor(Math.log(max) / Math.LN10)); max = Math.ceil(max / step) * step;
+    var step = Math.pow(10, Math.floor(Math.log(max) / Math.LN10)); max = Math.max(4, Math.ceil(max / step) * step); // readable gridlines even for an empty shop
     var svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", "0 0 640 250"); svg.setAttribute("class", "chart"); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "Revenue for the last 7 days");
     function s(tag, attrs, text) { var n = document.createElementNS(NS, tag); Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); }); if (text != null) n.textContent = text; return n; }
