@@ -40,6 +40,20 @@ With Docker: `docker build -t mini-shop-api backend && docker run -p 8000:8000 -
 
 Serve it over **https** (the app is on https, so browsers block a plain-http API), e.g. behind Caddy / nginx / a platform that terminates TLS, and run a single process: rate limits are kept in memory.
 
+## Dynamic KHQR (optional)
+Set these and every QR / deposit order gets its own KHQR with the exact amount (the deposit amount for deposit orders) that expires after `KHQR_MINUTES`; without them the fixed QR picture from the admin settings is used as before.
+
+| Variable | Example | |
+|---|---|---|
+| `KHQR_ID` | `khqr@aclb` | Bakong account id (required) |
+| `KHQR_NAME` | `Im Sovanny` | shop name on the code, max 25 chars (required) |
+| `KHQR_ACCOUNT` | bank account number | needed by some banks, e.g. ACLEDA (USD account) |
+| `KHQR_BANK` | `ACLEDA` | bank name |
+| `KHQR_CITY` | `PHNOM PENH` | max 15 chars |
+| `KHQR_MINUTES` | `10` | how long a code is valid |
+
+Amounts are in USD. The code only collects the money; marking an order paid is still done by the admin.
+
 ## Storage
 - `shop.db` (SQLite): products, settings and orders. Writes are serialized, so two admins saving at once no longer overwrite each other.
 - `images/`: uploaded pictures under a random 128-bit id; a picture is deleted when no product uses it any more.

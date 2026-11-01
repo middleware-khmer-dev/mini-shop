@@ -25,7 +25,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request, Response
 
-from . import logic
+from . import khqr, logic
 from .config import Config
 from .store import IMAGE_EXT, INVOICE_TTL_SECONDS, Store
 
@@ -226,8 +226,15 @@ def create_app(config: Config | None = None) -> FastAPI:
                 "id": order_id, "token": token, "createdAt": created_at, "status": "pending", "items": order["items"],
                 "subtotal": order["subtotal"], "shipping": order["shipping"], "total": order["total"], "deposit": order["deposit"], "paid": 0,
             }
-            if order["payMethod"] in ("khqr", "deposit") and settings["qrImage"]:
-                out["qrImage"] = settings["qrImage"]
+            if order["payMethod"] in ("khqr", "deposit"):
+                due = order["deposit"] if order["payMethod"] == "deposit" else order["total"]
+                if cfg.khqr_id and cfg.khqr_name and due > 0:
+                    # a code made for this order: exact amount, expires, so the customer cannot mistype the price
+                    out["qrImage"] = khqr.png_data_uri(khqr.build_payload(
+                        bakong_id=cfg.khqr_id, account_no=cfg.khqr_account, bank_name=cfg.khqr_bank, merchant_name=cfg.khqr_name,
+                        city=cfg.khqr_city, amount=due, bill_number=order_id, expires_in_minutes=cfg.khqr_minutes))
+                elif settings["qrImage"]:
+                    out["qrImage"] = settings["qrImage"]  # not configured: the shop's own fixed QR picture
             return reply(200, out, h)
         return reply(500, {"error": "could_not_save"}, h)
 

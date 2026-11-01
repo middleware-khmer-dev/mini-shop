@@ -234,3 +234,30 @@ def test_rate_limits_from_env(monkeypatch):
     monkeypatch.setenv("ORDER_RATE", "oops")  # ignored: not a number
     cfg = Config.from_env()
     assert cfg.admin_rate == 500 and cfg.order_rate == 10 and cfg.invoice_rate == 20
+
+
+# ---- dynamic KHQR -------------------------------------------------------------------------------
+def test_khqr_crc_matches_a_real_code():
+    from app.khqr import crc16
+    real = "00020101021129410009khqr@aclb0114000106116846140206ACLEDA394600042CCY010140414000106116846130511855176888775204599953031165802KH5910Im Sovanny6010PHNOM PENH6304"
+    assert crc16(real) == "9DB8"
+
+
+def test_khqr_payload_fields():
+    from app.khqr import build_payload, crc16
+    p = build_payload(bakong_id="khqr@aclb", account_no="123", bank_name="ACLEDA", merchant_name="Shop", city="PHNOM PENH", amount=10.5, bill_number="MS123456", now_ms=1000)
+    assert "0102" "12" in p and "540510.50" in p and "5303840" in p and "0108MS123456" in p
+    assert p[-8:-4] == "6304" and p[-4:] == crc16(p[:-4])
+
+
+def test_order_gets_a_dynamic_khqr_when_configured(tmp_path):
+    from fastapi.testclient import TestClient
+    from app.config import Config
+    from app.main import create_app
+    cfg = Config(admin_password="s3cret", data_dir=tmp_path, public_url="http://test", khqr_id="khqr@aclb", khqr_name="Shop")
+    c = TestClient(create_app(cfg), base_url="http://test")
+    prod = c.post("/admin/api/products", headers=ADMIN, json={"title": "Mug", "price": 10, "category": "home", "description": "d"}).json()
+    c.put("/admin/api/settings", headers=ADMIN, json={"shop": {"lat": 11.5564, "lng": 104.9282}, "radiusKm": 10, "qrImage": "", "tiers": [{"upToKm": 5, "fee": 1}, {"upToKm": None, "fee": 2}], "expressExtra": 1})
+    o = place(c, order_body(prod, payMethod="khqr")).json()
+    assert o["qrImage"].startswith("data:image/png;base64,")
+    assert "qrImage" not in place(c, order_body(prod, payMethod="cod")).json()
