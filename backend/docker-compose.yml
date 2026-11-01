@@ -1,5 +1,6 @@
 # One-command server: the API plus Caddy, which gets a free https certificate by itself.
 #   cp .env.example .env   (fill it in)   then   docker compose up -d --build
+name: mini-shop
 services:
   api:
     build: .
