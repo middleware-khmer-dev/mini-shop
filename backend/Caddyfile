@@ -1,3 +1,8 @@
+{
+	# no redirect listener on port 80 (it is not published, and may belong to another service)
+	auto_https disable_redirects
+}
+
 {$DOMAIN} {
 	reverse_proxy api:8000
 }

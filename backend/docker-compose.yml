@@ -14,7 +14,9 @@ services:
     image: caddy:2
     restart: unless-stopped
     depends_on: [api]
-    ports: ["80:80", "443:443"]
+    # only 443 is published: the certificate is obtained over 443 (TLS-ALPN), so this also works on a machine
+    # where port 80 already belongs to another service
+    ports: ["443:443"]
     environment:
       DOMAIN: ${DOMAIN}
     volumes:

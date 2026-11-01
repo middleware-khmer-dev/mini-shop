@@ -28,7 +28,7 @@ Open <http://localhost:8000/admin>, sign in (it looks like the shop app: sidebar
 With Docker: `docker build -t mini-shop-api backend && docker run -p 8000:8000 -e ADMIN_PASSWORD=... -v mini-shop-data:/data mini-shop-api`.
 
 ### On a server (https, one command)
-You need a machine with Docker and a domain name pointing at it (an `A` record), with ports 80 and 443 open.
+You need a machine with Docker and a domain name pointing at it (an `A` record), with port 443 open (port 80 is not needed, so it may belong to another service on the same machine; use the `https://` address).
 
 ```bash
 cd backend
