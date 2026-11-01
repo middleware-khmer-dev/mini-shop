@@ -69,9 +69,9 @@ export function PillNav() {
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={{ position: "absolute", left: 14, right: 14, bottom: bottomInset + 12, zIndex: 50, transform: [{ translateY }], opacity }}
+      style={{ position: "absolute", left: 12, right: 12, bottom: bottomInset + 8, zIndex: 50, transform: [{ translateY }], opacity }}
     >
-      <Glass solid className="flex-row rounded-full px-1.5 py-1.5 shadow-2xl shadow-black/25">
+      <Glass solid className="flex-row rounded-full p-1 shadow-xl shadow-black/20">
         {TABS.map((t) => {
           const active = t.key === activeKey;
           return (
@@ -79,17 +79,17 @@ export function PillNav() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={tr(t.label)}
-                className={`h-[56px] flex-1 items-center justify-center rounded-full ${active ? "bg-[#14141f]/90" : ""}`}
+                className={`h-[44px] flex-1 items-center justify-center rounded-full ${active ? "bg-[#14141f]/90" : ""}`}
               >
                 <View>
-                  <Icon name={t.icon} size={22} color={active ? "#fff" : "#6b7280"} />
+                  <Icon name={t.icon} size={20} color={active ? "#fff" : "#6b7280"} />
                   {t.key === "cart" && count > 0 ? (
                     <View className="absolute -right-2 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1">
                       <Text className="text-[9px] font-extrabold text-white">{count}</Text>
                     </View>
                   ) : null}
                 </View>
-                <Text numberOfLines={1} className={`mt-0.5 text-[11px] font-semibold ${active ? "text-white" : "text-soft"}`}>
+                <Text numberOfLines={1} className={`text-[10px] font-semibold ${active ? "text-white" : "text-soft"}`}>
                   {tr(t.label)}
                 </Text>
               </Pressable>

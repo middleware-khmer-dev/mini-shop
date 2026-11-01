@@ -199,7 +199,7 @@
       var on = n[0] === active ? " on" : "";
       var b = el("button", { class: "nav" + on, onclick: n[4] }, [icon(n[1], 18), el("span", { text: n[2] }), n[0] === "orders" ? el("span", { class: "nbadge", style: "display:none" }) : null]);
       side.appendChild(b);
-      tabs.appendChild(el("button", { class: "tab" + on, onclick: n[4], "aria-label": n[2] }, [icon(n[1], 20), el("span", { text: n[2] }), n[0] === "orders" ? el("span", { class: "nbadge", style: "display:none" }) : null]));
+      tabs.appendChild(el("button", { class: "tab" + on, onclick: n[4], "aria-label": n[2] }, [icon(n[1], 18), el("span", { text: n[2] }), n[0] === "orders" ? el("span", { class: "nbadge", style: "display:none" }) : null]));
     });
     side.appendChild(el("div", { class: "sp" }));
     side.appendChild(el("div", { class: "user" }, [el("div", { class: "avatar", text: "A" }), el("div", { class: "grow" }, [el("b", { text: "Administrator" }), el("small", { text: "Shop owner" })]), btn("", "ghost ic", "logout", function () { signOut(); }, "Sign out")]));

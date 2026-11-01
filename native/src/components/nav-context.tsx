@@ -13,8 +13,8 @@ type NavCtx = {
 
 const Ctx = createContext<NavCtx | null>(null);
 export const NAV_HEIGHT = 64;
-/** Space taken by the floating bottom bar (without the device bottom inset): 12 gap + 6 + 56 tab + 6 */
-export const PILL_BOTTOM_SPACE = 80;
+/** Space taken by the floating bottom bar (without the device bottom inset): 8 gap + 4 + 44 tab + 4 */
+export const PILL_BOTTOM_SPACE = 60;
 
 /** Bottom inset from the device (home indicator) or Telegram, whichever is larger */
 export function useBottomInset() {
