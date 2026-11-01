@@ -24,10 +24,10 @@ class Config:
     # behind a reverse proxy: take the client IP from X-Forwarded-For
     trust_proxy: bool = False
     # dynamic KHQR (optional): when khqr_id and khqr_name are set, QR orders get a code with the exact amount
-    khqr_id: str = ""          # Bakong account id, e.g. name@aclb
-    khqr_account: str = ""     # bank account number (some banks, e.g. ACLEDA, need it)
-    khqr_bank: str = ""        # bank name shown inside the code, e.g. ACLEDA
-    khqr_name: str = ""        # shop name on the code (max 25 characters)
+    khqr_id: str = "khqr@aclb"          # Bakong account id, e.g. name@aclb
+    khqr_account: str = "00010611684613"     # USD account; bank account number (some banks, e.g. ACLEDA, need it)
+    khqr_bank: str = "ACLEDA"        # bank name shown inside the code, e.g. ACLEDA
+    khqr_name: str = "Im Sovanny"        # shop name on the code (max 25 characters)
     khqr_city: str = "PHNOM PENH"
     khqr_minutes: int = 10     # how long a code stays valid
     # requests per minute per IP

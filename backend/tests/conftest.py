@@ -10,7 +10,7 @@ ADMIN = {"Authorization": "Bearer s3cret"}
 
 @pytest.fixture
 def client(tmp_path):
-    cfg = Config(admin_password="s3cret", data_dir=tmp_path, public_url="http://test")
+    cfg = Config(admin_password="s3cret", data_dir=tmp_path, public_url="http://test", khqr_id="")  # KHQR off: tests use the fixed QR picture
     return TestClient(create_app(cfg), base_url="http://test")
 
 
