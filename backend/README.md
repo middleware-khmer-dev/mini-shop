@@ -27,6 +27,19 @@ Open <http://localhost:8000/admin>, sign in (it looks like the shop app: sidebar
 
 With Docker: `docker build -t mini-shop-api backend && docker run -p 8000:8000 -e ADMIN_PASSWORD=... -v mini-shop-data:/data mini-shop-api`.
 
+### On a server (https, one command)
+You need a machine with Docker and a domain name pointing at it (an `A` record), with ports 80 and 443 open.
+
+```bash
+cd backend
+cp .env.example .env      # set DOMAIN and ADMIN_PASSWORD
+docker compose up -d --build
+```
+
+Caddy gets the https certificate by itself; the data lives in the `shop-data` volume (back it up). Check `https://<DOMAIN>/products`, then open `https://<DOMAIN>/admin`.
+
+Finally point the app at it: in the GitHub repository go to *Settings > Secrets and variables > Actions > Variables*, add `BACKEND_URL = https://<DOMAIN>` and re-run the *Deploy web build* workflow. Until `BACKEND_URL` is set the app still talks to the old Cloudflare Worker, which has no dynamic KHQR.
+
 ## Settings (environment variables)
 
 | Variable | Default | Meaning |

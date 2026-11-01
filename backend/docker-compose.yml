@@ -1,0 +1,25 @@
+# One-command server: the API plus Caddy, which gets a free https certificate by itself.
+#   cp .env.example .env   (fill it in)   then   docker compose up -d --build
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TRUST_PROXY: "1"
+      PUBLIC_URL: "https://${DOMAIN}"
+    volumes:
+      - shop-data:/data
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [api]
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+volumes:
+  shop-data:
+  caddy-data:
