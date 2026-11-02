@@ -25,7 +25,7 @@ def crc16(text: str) -> str:
 
 def build_payload(*, bakong_id: str, account_no: str = "", bank_name: str = "", merchant_name: str, city: str,
                   amount: float, bill_number: str = "", currency: str = "USD", expires_in_minutes: int = 10,
-                  now_ms: int | None = None) -> str:
+                  now_ms: int | None = None, mobile: str = "", bank_tag: tuple[str, ...] = ()) -> str:
     """The KHQR text for one payment of `amount` (USD with 2 decimals, or whole riel for KHR)."""
     if currency not in ("USD", "KHR"):
         raise ValueError("currency must be USD or KHR")
@@ -34,10 +34,12 @@ def build_payload(*, bakong_id: str, account_no: str = "", bank_name: str = "", 
     amount_text = f"{amount:.2f}" if currency == "USD" else str(round(amount))
     now = int(time.time() * 1000) if now_ms is None else now_ms
     account = _tlv("00", bakong_id) + (_tlv("01", account_no) if account_no else "") + (_tlv("02", bank_name) if bank_name else "")
-    extra = _tlv("01", bill_number[:25]) if bill_number else ""
+    extra = (_tlv("01", bill_number[:25]) if bill_number else "") + (_tlv("02", mobile) if mobile else "")
+    # some banks (ACLEDA) add their own tag 39; its parts are copied from the bank's own QR
+    bank = _tlv("39", "".join(_tlv(f"{i:02d}", v) for i, v in enumerate(bank_tag))) if bank_tag else ""
     body = (
         _tlv("00", "01") + _tlv("01", "12")  # 12 = dynamic (amount fixed, expires)
-        + _tlv("29", account) + _tlv("52", "5999")
+        + _tlv("29", account) + bank + _tlv("52", "5999")
         + _tlv("53", "840" if currency == "USD" else "116") + _tlv("54", amount_text)
         + _tlv("58", "KH") + _tlv("59", merchant_name[:25]) + _tlv("60", city[:15])
         + (_tlv("62", extra) if extra else "")

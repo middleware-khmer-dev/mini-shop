@@ -232,7 +232,8 @@ def create_app(config: Config | None = None) -> FastAPI:
                     # a code made for this order: exact amount, expires, so the customer cannot mistype the price
                     out["qrImage"] = khqr.png_data_uri(khqr.build_payload(
                         bakong_id=cfg.khqr_id, account_no=cfg.khqr_account, bank_name=cfg.khqr_bank, merchant_name=cfg.khqr_name,
-                        city=cfg.khqr_city, amount=due, bill_number=order_id, expires_in_minutes=cfg.khqr_minutes))
+                        city=cfg.khqr_city, amount=due, bill_number=order_id, expires_in_minutes=cfg.khqr_minutes,
+                        mobile=cfg.khqr_mobile, bank_tag=tuple(p for p in cfg.khqr_bank_tag.split("|") if p)))
                 elif settings["qrImage"]:
                     out["qrImage"] = settings["qrImage"]  # not configured: the shop's own fixed QR picture
             return reply(200, out, h)

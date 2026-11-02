@@ -64,6 +64,10 @@ Set these and every QR / deposit order gets its own KHQR with the exact amount (
 | `KHQR_BANK` | `ACLEDA` | bank name |
 | `KHQR_CITY` | `PHNOM PENH` | max 15 chars |
 | `KHQR_MINUTES` | `10` | how long a code is valid |
+| `KHQR_MOBILE` | `0969014971` | shop phone inside the code (tag 62), as in the bank's own QR |
+| `KHQR_BANK_TAG` | `2CCY\|4` | the bank's own tag 39 parts (ACLEDA), copied from the bank's QR |
+
+**If the bank app says the code does not work (ACLEDA error 0237):** scan the shop's own static QR from the bank with a plain QR reader, read tag `29` (the id after `khqr@aclb` is `KHQR_ACCOUNT`; ACLEDA uses the phone-based number there, not the long account number), tag `39` (`KHQR_BANK_TAG`) and the phone in tag `62` (`KHQR_MOBILE`), set them in `.env` and run `docker compose up -d`.
 
 Amounts are in USD. The code only collects the money; marking an order paid is still done by the admin.
 

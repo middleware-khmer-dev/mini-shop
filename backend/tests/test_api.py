@@ -249,6 +249,17 @@ def test_khqr_defaults_survive_from_env(monkeypatch):
     assert Config.from_env().khqr_id == ""  # set to empty: dynamic KHQR off, fixed QR picture
 
 
+def test_khqr_matches_acleda_static_layout():
+    from app import khqr
+
+    # the tags of the shop's own ACLEDA static QR: account id, bank tag 39, phone in tag 62
+    text = khqr.build_payload(bakong_id="khqr@aclb", account_no="85517688877", bank_name="ACLEDA", merchant_name="Im Sovanny",
+                              city="PHNOM PENH", amount=1.0, bill_number="MS1", mobile="0969014971", bank_tag=("2CCY", "4"), now_ms=1)
+    assert "0009khqr@aclb011185517688877" in text and "391300042CCY0101" + "4" in text
+    assert "0108MS1" not in text and "0103MS1" in text and "02100969014971" in text
+    assert text[-4:] == khqr.crc16(text[:-4])
+
+
 # ---- dynamic KHQR -------------------------------------------------------------------------------
 def test_khqr_crc_matches_a_real_code():
     from app.khqr import crc16

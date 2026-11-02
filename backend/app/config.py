@@ -29,6 +29,8 @@ class Config:
     khqr_bank: str = "ACLEDA"        # bank name shown inside the code, e.g. ACLEDA
     khqr_name: str = "Im Sovanny"        # shop name on the code (max 25 characters)
     khqr_city: str = "PHNOM PENH"
+    khqr_mobile: str = ""      # shop phone shown in the code (tag 62), e.g. 0969014971
+    khqr_bank_tag: str = ""    # bank's own tag 39 parts copied from its QR, "|"-separated, e.g. 2CCY|4 (ACLEDA)
     khqr_minutes: int = 10     # how long a code stays valid
     # requests per minute per IP
     admin_rate: int = 60
@@ -49,6 +51,8 @@ class Config:
         cfg.khqr_bank = env.get("KHQR_BANK", cfg.khqr_bank).strip()  # unset keeps the default; set to empty turns it off
         cfg.khqr_name = env.get("KHQR_NAME", cfg.khqr_name).strip()  # unset keeps the default; set to empty turns it off
         cfg.khqr_city = env.get("KHQR_CITY", cfg.khqr_city).strip()
+        cfg.khqr_mobile = env.get("KHQR_MOBILE", cfg.khqr_mobile).strip()
+        cfg.khqr_bank_tag = env.get("KHQR_BANK_TAG", cfg.khqr_bank_tag).strip()
         if env.get("KHQR_MINUTES", "").isdigit() and int(env["KHQR_MINUTES"]) > 0:
             cfg.khqr_minutes = int(env["KHQR_MINUTES"])
         cfg.trust_proxy = env.get("TRUST_PROXY", "") in ("1", "true", "yes")
