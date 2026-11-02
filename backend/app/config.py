@@ -32,6 +32,9 @@ class Config:
     khqr_mobile: str = ""      # shop phone shown in the code (tag 62), e.g. 0969014971
     khqr_bank_tag: str = ""    # bank's own tag 39 parts copied from its QR, "|"-separated, e.g. 2CCY|4 (ACLEDA)
     khqr_minutes: int = 10     # how long a code stays valid
+    # Telegram message to the shop owner for every new order (optional)
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
     # requests per minute per IP
     admin_rate: int = 60
     order_rate: int = 10
@@ -55,6 +58,8 @@ class Config:
         cfg.khqr_bank_tag = env.get("KHQR_BANK_TAG", cfg.khqr_bank_tag).strip()
         if env.get("KHQR_MINUTES", "").isdigit() and int(env["KHQR_MINUTES"]) > 0:
             cfg.khqr_minutes = int(env["KHQR_MINUTES"])
+        cfg.telegram_bot_token = env.get("TELEGRAM_BOT_TOKEN", "").strip()
+        cfg.telegram_chat_id = env.get("TELEGRAM_CHAT_ID", "").strip()
         cfg.trust_proxy = env.get("TRUST_PROXY", "") in ("1", "true", "yes")
         for attr, name in (("admin_rate", "ADMIN_RATE"), ("order_rate", "ORDER_RATE"), ("invoice_rate", "INVOICE_RATE")):
             if env.get(name, "").isdigit():

@@ -25,7 +25,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request, Response
 
-from . import khqr, logic
+from . import khqr, logic, notify
 from .config import Config
 from .store import IMAGE_EXT, INVOICE_TTL_SECONDS, Store
 
@@ -236,6 +236,9 @@ def create_app(config: Config | None = None) -> FastAPI:
                         mobile=cfg.khqr_mobile, bank_tag=tuple(p for p in cfg.khqr_bank_tag.split("|") if p)))
                 elif settings["qrImage"]:
                     out["qrImage"] = settings["qrImage"]  # not configured: the shop's own fixed QR picture
+            if cfg.telegram_bot_token and cfg.telegram_chat_id:
+                notify.send_async(cfg.telegram_bot_token, cfg.telegram_chat_id,
+                                  notify.order_message(order_id, order, f"{cfg.public_url or origin_of(request)}/admin"))
             return reply(200, out, h)
         return reply(500, {"error": "could_not_save"}, h)
 

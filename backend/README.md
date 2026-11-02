@@ -71,6 +71,16 @@ Set these and every QR / deposit order gets its own KHQR with the exact amount (
 
 Amounts are in USD. The code only collects the money; marking an order paid is still done by the admin.
 
+## Telegram message for every new order (optional)
+The shop owner gets a Telegram message for each new order (customer, payment method, amount to check in the bank app, items, address, link to `/admin`). It is the quick way to know a QR order is waiting for you to confirm the payment.
+
+1. In Telegram open `@BotFather`, send `/newbot`, and copy the token it gives you.
+2. Open your new bot and press **Start** (a bot can only write to people who started it; for a group, add the bot to the group).
+3. Find your chat id: open `https://api.telegram.org/bot<TOKEN>/getUpdates` after sending the bot a message, and read `message.chat.id` (a group id starts with `-`).
+4. Put both in `.env`: `TELEGRAM_BOT_TOKEN=...` and `TELEGRAM_CHAT_ID=...`, then `docker compose up -d`.
+
+A failed message never stops an order. The token is a secret: keep it only in `.env`.
+
 ## Storage
 - `shop.db` (SQLite): products, settings and orders. Writes are serialized, so two admins saving at once no longer overwrite each other.
 - `images/`: uploaded pictures under a random 128-bit id; a picture is deleted when no product uses it any more.

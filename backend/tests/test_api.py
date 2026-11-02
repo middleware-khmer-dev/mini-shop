@@ -285,3 +285,50 @@ def test_order_gets_a_dynamic_khqr_when_configured(tmp_path):
     o = place(c, order_body(prod, payMethod="khqr")).json()
     assert o["qrImage"].startswith("data:image/png;base64,")
     assert "qrImage" not in place(c, order_body(prod, payMethod="cod")).json()
+
+
+# ---- Telegram message to the owner ---------------------------------------------------------------
+def test_order_sends_a_telegram_message_when_configured(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app import notify
+    from app.config import Config
+    from app.main import create_app
+
+    sent = []
+    monkeypatch.setattr(notify, "send_async", lambda token, chat, text: sent.append((token, chat, text)))
+    cfg = Config(admin_password="s3cret", data_dir=tmp_path, public_url="http://test", khqr_id="", telegram_bot_token="123:abc", telegram_chat_id="42")
+    c = TestClient(create_app(cfg), base_url="http://test")
+    p = c.post("/admin/api/products", headers=ADMIN, json={"title": "Mug", "price": 10, "category": "home", "description": "d"}).json()
+    body = {**order_body(p), "payMethod": "khqr"}
+    r = place(c, body)
+    assert r.status_code == 200 and len(sent) == 1
+    token, chat, text = sent[0]
+    assert (token, chat) == ("123:abc", "42")
+    assert r.json()["id"] in text and "KHQR" in text and "http://test/admin" in text
+
+
+def test_no_telegram_message_when_not_configured(client, product, monkeypatch):
+    from app import notify
+
+    monkeypatch.setattr(notify, "send_async", lambda *a: (_ for _ in ()).throw(AssertionError("must not send")))
+    assert place(client, order_body(product)).status_code == 200
+
+
+def test_telegram_failure_never_breaks_the_helper(monkeypatch):
+    from app import notify
+
+    def boom(*a, **k):
+        raise OSError("network down")
+
+    monkeypatch.setattr(notify.urllib.request, "urlopen", boom)
+    assert notify.send_telegram("123:abc", "42", "hi") is False
+
+
+def test_telegram_settings_from_env(monkeypatch):
+    from app.config import Config
+
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", " 123:abc ")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "-100200")
+    cfg = Config.from_env()
+    assert cfg.telegram_bot_token == "123:abc" and cfg.telegram_chat_id == "-100200"
