@@ -35,7 +35,11 @@ def check_md5(api: str, token: str, md5: str, proxy: str = "", timeout: float = 
             body = json.loads(res.read().decode() or "{}")
     except urllib.error.HTTPError as exc:
         # 401 / 403: bad or expired token, or this server is not allowed to use the API
-        log.warning("Bakong answered HTTP %s", exc.code)
+        try:
+            detail = exc.read(300).decode("utf-8", "replace")  # the bank's own message, e.g. "token expired"; it never contains our token
+        except Exception:
+            detail = ""
+        log.warning("Bakong answered HTTP %s %s", exc.code, detail)
         return "error", None
     except Exception as exc:  # network down, timeout, bad JSON
         log.warning("Bakong check failed: %s", type(exc).__name__)
