@@ -32,6 +32,10 @@ class Config:
     khqr_mobile: str = ""      # shop phone shown in the code (tag 62), e.g. 0969014971
     khqr_bank_tag: str = ""    # bank's own tag 39 parts copied from its QR, "|"-separated, e.g. 2CCY|4 (ACLEDA)
     khqr_minutes: int = 10     # how long a code stays valid
+    # automatic payment check with the Bakong Open API (optional): needs a token from the National Bank of Cambodia
+    bakong_token: str = ""
+    bakong_api: str = "https://api-bakong.nbc.gov.kh"
+    bakong_proxy: str = ""     # optional https proxy to reach the API from outside Cambodia, e.g. http://user:pass@host:3128
     # Telegram message to the shop owner for every new order (optional)
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
@@ -58,6 +62,9 @@ class Config:
         cfg.khqr_bank_tag = env.get("KHQR_BANK_TAG", cfg.khqr_bank_tag).strip()
         if env.get("KHQR_MINUTES", "").isdigit() and int(env["KHQR_MINUTES"]) > 0:
             cfg.khqr_minutes = int(env["KHQR_MINUTES"])
+        cfg.bakong_token = env.get("BAKONG_TOKEN", "").strip()
+        cfg.bakong_api = env.get("BAKONG_API", cfg.bakong_api).strip().rstrip("/")
+        cfg.bakong_proxy = env.get("BAKONG_PROXY", "").strip()
         cfg.telegram_bot_token = env.get("TELEGRAM_BOT_TOKEN", "").strip()
         cfg.telegram_chat_id = env.get("TELEGRAM_CHAT_ID", "").strip()
         cfg.trust_proxy = env.get("TRUST_PROXY", "") in ("1", "true", "yes")

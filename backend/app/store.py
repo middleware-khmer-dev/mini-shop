@@ -33,7 +33,10 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping REAL NOT NULL,
   total REAL NOT NULL,
   items TEXT NOT NULL,            -- JSON: [{productId, name, price, qty, variant}]
-  paid REAL NOT NULL DEFAULT 0    -- money received so far (set by the admin); total - paid is still due
+  paid REAL NOT NULL DEFAULT 0,   -- money received so far (set by the admin or by the Bakong check); total - paid is still due
+  qr_md5 TEXT NOT NULL DEFAULT '',  -- MD5 of the dynamic KHQR of this order (Bakong looks the payment up with it)
+  qr_due REAL NOT NULL DEFAULT 0,   -- the amount that QR asks for
+  qr_expires INTEGER NOT NULL DEFAULT 0  -- when that QR expires (ms since 1970)
 );
 CREATE INDEX IF NOT EXISTS orders_created ON orders (created_at DESC);
 """
@@ -57,6 +60,11 @@ class Store:
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.executescript(SCHEMA)
+        # a database made by an older version: add the columns it lacks
+        have = {r["name"] for r in self.db.execute("PRAGMA table_info(orders)")}
+        for column, ddl in (("qr_md5", "TEXT NOT NULL DEFAULT ''"), ("qr_due", "REAL NOT NULL DEFAULT 0"), ("qr_expires", "INTEGER NOT NULL DEFAULT 0")):
+            if column not in have:
+                self.db.execute(f"ALTER TABLE orders ADD COLUMN {column} {ddl}")
 
     # ---- key/value (products, settings) -------------------------------------------------------
     def get_json(self, key: str, default: Any) -> Any:

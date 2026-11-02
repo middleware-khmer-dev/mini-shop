@@ -25,7 +25,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request, Response
 
-from . import khqr, logic, notify
+from . import bakong, khqr, logic, notify
 from .config import Config
 from .store import IMAGE_EXT, INVOICE_TTL_SECONDS, Store
 
@@ -104,6 +104,8 @@ def create_app(config: Config | None = None) -> FastAPI:
     app = FastAPI(title="Mini Shop API", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.store = store
     app.state.config = cfg
+    if cfg.bakong_token:
+        bakong.start_poller(store, cfg)  # marks QR orders paid when Bakong sees the payment
 
     # ---- helpers ----------------------------------------------------------------------------
     def reply(status: int, body: Any, headers: dict | None = None) -> Response:
@@ -230,10 +232,14 @@ def create_app(config: Config | None = None) -> FastAPI:
                 due = order["deposit"] if order["payMethod"] == "deposit" else order["total"]
                 if cfg.khqr_id and cfg.khqr_name and due > 0:
                     # a code made for this order: exact amount, expires, so the customer cannot mistype the price
-                    out["qrImage"] = khqr.png_data_uri(khqr.build_payload(
+                    payload = khqr.build_payload(
                         bakong_id=cfg.khqr_id, account_no=cfg.khqr_account, bank_name=cfg.khqr_bank, merchant_name=cfg.khqr_name,
                         city=cfg.khqr_city, amount=due, bill_number=order_id, expires_in_minutes=cfg.khqr_minutes,
-                        mobile=cfg.khqr_mobile, bank_tag=tuple(p for p in cfg.khqr_bank_tag.split("|") if p)))
+                        mobile=cfg.khqr_mobile, bank_tag=tuple(p for p in cfg.khqr_bank_tag.split("|") if p))
+                    out["qrImage"] = khqr.png_data_uri(payload)
+                    # remember the code so Bakong can tell us when it was paid
+                    store.execute("UPDATE orders SET qr_md5 = ?, qr_due = ?, qr_expires = ? WHERE id = ?",
+                                  (hashlib.md5(payload.encode()).hexdigest(), due, int(time.time() * 1000) + cfg.khqr_minutes * 60_000, order_id))
                 elif settings["qrImage"]:
                     out["qrImage"] = settings["qrImage"]  # not configured: the shop's own fixed QR picture
             if cfg.telegram_bot_token and cfg.telegram_chat_id:

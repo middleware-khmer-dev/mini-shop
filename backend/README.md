@@ -71,6 +71,24 @@ Set these and every QR / deposit order gets its own KHQR with the exact amount (
 
 Amounts are in USD. The code only collects the money; marking an order paid is still done by the admin.
 
+## Automatic payment check with Bakong (optional)
+With a Bakong token, the server asks the National Bank of Cambodia every 10 seconds whether each unpaid QR / deposit order was paid with its own code (until the code has expired, plus 10 minutes). When it was, the order is marked paid (the deposit for deposit orders), the customer's page turns into "Payment received!" with the invoice, and the owner gets a Telegram message. Marking an order paid in `/admin` still works.
+
+| Variable | Default | |
+|---|---|---|
+| `BAKONG_TOKEN` | *(empty = off)* | the Bakong Open API token (see below) |
+| `BAKONG_API` | `https://api-bakong.nbc.gov.kh` | the API address |
+| `BAKONG_PROXY` | *(none)* | optional https proxy, for a server outside Cambodia if the API refuses it |
+
+Get a token: register for the Bakong Open API at the National Bank of Cambodia (Bakong website, "Open API / Developer") and copy the token it gives you (it expires after a while, so check it with the command below now and then). Check that the token works and that this server may reach the API:
+
+```bash
+docker compose exec api python -c "from app.config import Config; from app import bakong; print(bakong.ping(Config.from_env()))"
+```
+`ok` means it works; `error` means a wrong or expired token, a blocked server (try `BAKONG_PROXY`), or no network (see `docker compose logs api`).
+
+Run a single server process: the check runs inside it. Bakong only sees payments that go through its network; a transfer between two accounts of the same bank may not appear there, so test with a payment from another bank.
+
 ## Telegram message for every new order (optional)
 The shop owner gets a Telegram message for each new order (customer, payment method, amount to check in the bank app, items, address, link to `/admin`). It is the quick way to know a QR order is waiting for you to confirm the payment.
 

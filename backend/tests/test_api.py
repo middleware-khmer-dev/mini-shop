@@ -332,3 +332,131 @@ def test_telegram_settings_from_env(monkeypatch):
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "-100200")
     cfg = Config.from_env()
     assert cfg.telegram_bot_token == "123:abc" and cfg.telegram_chat_id == "-100200"
+
+
+# ---- Bakong automatic payment check --------------------------------------------------------------
+def _qr_app(tmp_path, **kw):
+    from fastapi.testclient import TestClient
+
+    from app.config import Config
+    from app.main import create_app
+
+    cfg = Config(admin_password="s3cret", data_dir=tmp_path, public_url="http://test", khqr_name="Shop", **kw)
+    app = create_app(cfg)
+    return cfg, app, TestClient(app, base_url="http://test")
+
+
+def _qr_order(c, deposit=False):
+    p = c.post("/admin/api/products", headers=ADMIN, json={"title": "Mug", "price": 10, "category": "home", "description": "d"}).json()
+    r = place(c, order_body(p, payMethod="deposit" if deposit else "khqr"))
+    assert r.status_code == 200
+    return r.json()
+
+
+def test_qr_order_remembers_the_md5_of_its_code(tmp_path):
+    import hashlib
+
+    cfg, app, c = _qr_app(tmp_path)
+    order = _qr_order(c)
+    row = app.state.store.one("SELECT qr_md5, qr_due, qr_expires FROM orders WHERE id = ?", (order["id"],))
+    assert len(row["qr_md5"]) == 32 and row["qr_due"] == order["total"] and row["qr_expires"] > time.time() * 1000
+    assert hashlib.md5(b"x").hexdigest() != row["qr_md5"]
+
+
+def test_bakong_marks_a_paid_qr_order(tmp_path, monkeypatch):
+    from app import bakong, notify
+
+    sent = []
+    monkeypatch.setattr(notify, "send_async", lambda token, chat, text: sent.append(text))
+    cfg, app, c = _qr_app(tmp_path, bakong_token="tok", telegram_bot_token="1:a", telegram_chat_id="9")
+    order = _qr_order(c)
+    store = app.state.store
+    asked = []
+
+    def unpaid(api, token, md5, proxy=""):
+        asked.append(md5)
+        return "unpaid", None
+
+    assert bakong.settle_pending(store, cfg, check=unpaid) == 0 and len(asked) == 1
+    assert store.one("SELECT paid FROM orders WHERE id = ?", (order["id"],))["paid"] == 0
+    paid = lambda api, token, md5, proxy="": ("paid", {"amount": order["total"], "currency": "USD"})
+    assert bakong.settle_pending(store, cfg, check=paid) == 1
+    assert store.one("SELECT paid FROM orders WHERE id = ?", (order["id"],))["paid"] == order["total"]
+    assert any(order["id"] in t and "Bakong" in t for t in sent)
+    assert bakong.settle_pending(store, cfg, check=paid) == 0  # already paid: not asked again
+    assert c.get(f"/orders/{order['id']}", headers={"Origin": SHOP, "X-Order-Token": order["token"]}).json()["paid"] == order["total"]
+
+
+def test_bakong_deposit_order_is_paid_with_the_deposit(tmp_path):
+    from app import bakong
+
+    cfg, app, c = _qr_app(tmp_path, bakong_token="tok")
+    order = _qr_order(c, deposit=True)
+    paid = lambda api, token, md5, proxy="": ("paid", {"amount": order["deposit"], "currency": "USD"})
+    assert bakong.settle_pending(app.state.store, cfg, check=paid) == 1
+    assert app.state.store.one("SELECT paid FROM orders WHERE id = ?", (order["id"],))["paid"] == order["deposit"] < order["total"]
+
+
+def test_bakong_ignores_wrong_amount_expired_codes_and_errors(tmp_path):
+    from app import bakong
+
+    cfg, app, c = _qr_app(tmp_path, bakong_token="tok")
+    order = _qr_order(c)
+    store = app.state.store
+    less = lambda api, token, md5, proxy="": ("paid", {"amount": 0.01, "currency": "USD"})
+    riel = lambda api, token, md5, proxy="": ("paid", {"amount": order["total"], "currency": "KHR"})
+    broken = lambda api, token, md5, proxy="": ("error", None)
+    for check in (less, riel, broken):
+        assert bakong.settle_pending(store, cfg, check=check) == 0
+    later = int(time.time() * 1000) + 60 * 60_000  # an hour later: the code (and its grace time) is over
+    always = lambda api, token, md5, proxy="": ("paid", {"amount": order["total"], "currency": "USD"})
+    assert bakong.settle_pending(store, cfg, check=always, now_ms=later) == 0
+    assert store.one("SELECT paid FROM orders WHERE id = ?", (order["id"],))["paid"] == 0
+
+
+def test_bakong_answer_parsing(monkeypatch):
+    import io
+    import json as _json
+
+    from app import bakong
+
+    class Opener:
+        def __init__(self, body):
+            self.body = body
+
+        def open(self, req, timeout=0):
+            assert req.get_header("Authorization") == "Bearer tok" and _json.loads(req.data) == {"md5": "m"}
+            return io.BytesIO(_json.dumps(self.body).encode())
+
+    found = {"responseCode": 0, "data": {"amount": 1, "currency": "USD"}}
+    monkeypatch.setattr(bakong.urllib.request, "build_opener", lambda *a: Opener(found))
+    assert bakong.check_md5("https://x", "tok", "m") == ("paid", {"amount": 1, "currency": "USD"})
+    monkeypatch.setattr(bakong.urllib.request, "build_opener", lambda *a: Opener({"responseCode": 1, "data": None}))
+    assert bakong.check_md5("https://x", "tok", "m") == ("unpaid", None)
+    monkeypatch.setattr(bakong.urllib.request, "build_opener", lambda *a: (_ for _ in ()).throw(OSError("down")))
+    assert bakong.check_md5("https://x", "tok", "m") == ("error", None)
+
+
+def test_old_database_gets_the_new_order_columns(tmp_path):
+    import sqlite3
+
+    from app.store import Store
+
+    db = sqlite3.connect(tmp_path / "shop.db")
+    db.execute("CREATE TABLE orders (id TEXT PRIMARY KEY, token TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', "
+               "customer_name TEXT NOT NULL, phone TEXT NOT NULL, address TEXT NOT NULL, lat REAL, lng REAL, note TEXT NOT NULL DEFAULT '', "
+               "ship_id TEXT NOT NULL, pay_method TEXT NOT NULL, subtotal REAL NOT NULL, shipping REAL NOT NULL, total REAL NOT NULL, items TEXT NOT NULL, paid REAL NOT NULL DEFAULT 0)")
+    db.commit()
+    db.close()
+    store = Store(tmp_path)
+    assert {"qr_md5", "qr_due", "qr_expires"} <= {r["name"] for r in store.query("PRAGMA table_info(orders)")}
+    Store(tmp_path)  # opening it again is fine
+
+
+def test_bakong_settings_from_env(monkeypatch):
+    from app.config import Config
+
+    monkeypatch.setenv("BAKONG_TOKEN", " tok ")
+    monkeypatch.setenv("BAKONG_PROXY", "http://p:3128")
+    cfg = Config.from_env()
+    assert cfg.bakong_token == "tok" and cfg.bakong_proxy == "http://p:3128" and cfg.bakong_api == "https://api-bakong.nbc.gov.kh"
