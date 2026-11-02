@@ -10,7 +10,7 @@ import { useTelegram } from "@/lib/telegram";
 import { Order, OrderItem, useOrders } from "@/lib/orders";
 import { money } from "@/lib/cart";
 import { DEPOSIT_PERCENT } from "@/data/shop";
-import { ORDERS_API, fetchOrderStatus } from "@/lib/api";
+import { ORDERS_API, OrderError, fetchOrderStatus, renewQr } from "@/lib/api";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const formatDate = (iso: string) => {
@@ -50,7 +50,7 @@ function labelsFor(order: Order, t: (k: string) => string, _lang: Lang): Invoice
 export default function Invoice() {
   const { t, lang } = useI18n();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { find, setStatus } = useOrders();
+  const { find, setStatus, setQr } = useOrders();
   const { inTelegram } = useTelegram();
   const [viewer, setViewer] = useState<{ imageUrl: string; width: number; height: number } | null>(null);
   const order = find(id);
@@ -70,6 +70,36 @@ export default function Invoice() {
     const timer = setInterval(refreshStatus, awaiting ? 8_000 : 30_000);
     return () => clearInterval(timer);
   }, [order?.id, token, order?.status, awaiting]);
+
+  // the QR stops working after a few minutes: count down, and let the customer ask for a new one
+  const [now, setNow] = useState(() => Date.now());
+  const [renewing, setRenewing] = useState(false);
+  const [renewFailed, setRenewFailed] = useState(false);
+  const expiresAt = order?.qrExpiresAt;
+  useEffect(() => {
+    if (!awaiting || !expiresAt) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [awaiting, expiresAt]);
+  const left = expiresAt ? Math.max(0, expiresAt - now) : null;
+  const expired = left === 0;
+  const mmss = left == null ? "" : `${pad(Math.floor(left / 60_000))}:${pad(Math.floor((left % 60_000) / 1000))}`;
+  const renew = async () => {
+    if (!order || !token || renewing) return;
+    setRenewing(true);
+    setRenewFailed(false);
+    try {
+      const q = await renewQr(order.id, token);
+      setQr(order.id, q.qrImage, q.qrExpiresAt);
+      setNow(Date.now());
+    } catch (e) {
+      if (e instanceof OrderError && e.code === "already_paid") refreshStatus(); // paid in the meantime: the page turns into the invoice
+      else setRenewFailed(true);
+    } finally {
+      setRenewing(false);
+    }
+  };
 
   if (!order) {
     return (
@@ -135,10 +165,28 @@ export default function Invoice() {
         <View className="w-full max-w-[440px] items-center gap-2 rounded-3xl bg-white p-5 shadow-lg shadow-black/10">
           <Text className="text-[15px] font-extrabold text-ink">{t("qr.title")}</Text>
           {order.qrImage ? (
-            <Image source={{ uri: order.qrImage }} resizeMode="contain" accessibilityLabel={t("qr.title")} style={{ width: 240, height: 240 }} />
+            <View style={{ width: 240, height: 240 }}>
+              <Image source={{ uri: order.qrImage }} resizeMode="contain" accessibilityLabel={t("qr.title")} style={{ width: 240, height: 240, opacity: expired ? 0.12 : 1 }} />
+              {expired ? (
+                <View className="absolute inset-0 items-center justify-center px-4">
+                  <Text className="text-center text-[15px] font-extrabold text-ink">{t("qr.expired")}</Text>
+                </View>
+              ) : null}
+            </View>
           ) : (
             <Text className="text-center text-[13px] leading-5 text-soft">{t("qr.none")}</Text>
           )}
+          {left != null && !expired ? <Text className="text-[13px] font-bold text-ink">{t("qr.expiresIn", { time: mmss })}</Text> : null}
+          {left != null ? (
+            <Pressable
+              disabled={renewing}
+              onPress={renew}
+              className={`h-11 w-full items-center justify-center rounded-2xl ${expired ? "bg-[#14141f]" : "border border-black/15 bg-white"} ${renewing ? "opacity-70" : ""}`}
+            >
+              <Text className={`text-[13.5px] font-bold ${expired ? "text-white" : "text-ink"}`}>{renewing ? t("qr.renewing") : t("qr.renew")}</Text>
+            </Pressable>
+          ) : null}
+          {renewFailed ? <Text className="text-center text-[12.5px] text-red-600">{t("qr.renewFailed")}</Text> : null}
           <Text className="text-[12px] text-soft">{order.payMethod === "deposit" ? t("qr.deposit", { p: DEPOSIT_PERCENT }) : t("qr.amount")}</Text>
           <Text className="text-[22px] font-extrabold text-ink">{money(order.payMethod === "deposit" ? order.deposit ?? order.total : order.total)}</Text>
           {order.payMethod === "deposit" ? <Text className="text-center text-[12.5px] font-semibold text-ink">{t("qr.rest", { rest: money(order.total - (order.deposit ?? 0)) })}</Text> : null}

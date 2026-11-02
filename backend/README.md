@@ -9,6 +9,7 @@ The shop's API and admin page. It replaces the old Cloudflare Workers (`api-work
 | `POST /orders/quote` | the shop app | may this pin pay cash? delivery fees (distance rule) |
 | `POST /orders` | the shop app | place an order (only from the shop's own website); returns the order number and a secret token |
 | `GET /orders/<id>` | the customer's device | the order's status; needs the token from `POST /orders` |
+| `POST /orders/<id>/qr` | the customer's device | a new QR for an unpaid QR / deposit order whose code expired (same order, same amount); needs the token |
 | `POST /invoice`, `GET /invoice/<id>.pdf` | the shop app | temporary invoice PDFs so Telegram can download them (deleted after 1 hour) |
 | `/admin` | admin | the admin page (password): products, pictures, orders, settings |
 

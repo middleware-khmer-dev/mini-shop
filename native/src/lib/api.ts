@@ -13,7 +13,7 @@ export type PlaceOrderInput = {
   note?: string;
 };
 
-export type PlacedOrder = Pick<Order, "id" | "createdAt" | "items" | "subtotal" | "shipping" | "total"> & { token: string; status: string; qrImage?: string; deposit?: number; paid?: number };
+export type PlacedOrder = Pick<Order, "id" | "createdAt" | "items" | "subtotal" | "shipping" | "total"> & { token: string; status: string; qrImage?: string; qrExpiresAt?: number; deposit?: number; paid?: number };
 
 export class OrderError extends Error {
   constructor(public code: string) {
@@ -44,6 +44,10 @@ export const placeOrder = (input: PlaceOrderInput) =>
 /** Current status of an order (needs the token returned when it was placed). */
 export const fetchOrderStatus = (id: string, token: string) =>
   call<{ id: string; status: string; paid?: number; deposit?: number }>(`/orders/${encodeURIComponent(id)}`, { headers: { "X-Order-Token": token } }, 10_000);
+
+/** A new QR for an unpaid QR / deposit order whose code has expired (same order, same amount). */
+export const renewQr = (id: string, token: string) =>
+  call<{ qrImage: string; qrExpiresAt: number }>(`/orders/${encodeURIComponent(id)}/qr`, { method: "POST", headers: { "X-Order-Token": token } });
 
 export type CashQuote = { cashAllowed: boolean; radiusKm: number; distanceKm: number | null; fees?: { standard: number; express: number } };
 

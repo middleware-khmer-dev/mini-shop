@@ -99,6 +99,7 @@ def create_app(config: Config | None = None) -> FastAPI:
     store = Store(cfg.data_dir)
     admin_limit = RateLimiter(cfg.admin_rate)
     order_limit = RateLimiter(cfg.order_rate)
+    qr_limit = RateLimiter(cfg.order_rate)
     invoice_limit = RateLimiter(cfg.invoice_rate)
 
     app = FastAPI(title="Mini Shop API", docs_url=None, redoc_url=None, openapi_url=None)
@@ -157,6 +158,15 @@ def create_app(config: Config | None = None) -> FastAPI:
     def load_settings() -> dict:
         return logic.load_settings(store.get_json("settings", {}))
 
+    def new_qr(order_id: str, due: float) -> tuple[str, str, int]:
+        """A fresh dynamic KHQR for one order: (picture, md5 for the Bakong check, expiry in ms since 1970)."""
+        expires_in = cfg.khqr_minutes * 60_000
+        payload = khqr.build_payload(
+            bakong_id=cfg.khqr_id, account_no=cfg.khqr_account, bank_name=cfg.khqr_bank, merchant_name=cfg.khqr_name,
+            city=cfg.khqr_city, amount=due, bill_number=order_id, expires_in_minutes=cfg.khqr_minutes,
+            mobile=cfg.khqr_mobile, bank_tag=tuple(p for p in cfg.khqr_bank_tag.split("|") if p))
+        return khqr.png_data_uri(payload), hashlib.md5(payload.encode()).hexdigest(), int(time.time() * 1000) + expires_in
+
     def drop_unused_images(origin: str, before: list[str], after: list[str]) -> None:
         """Pictures we host are removed when no product uses them any more."""
         keep, prefix = set(after), f"{origin}/img/"
@@ -186,6 +196,7 @@ def create_app(config: Config | None = None) -> FastAPI:
     @app.options("/orders")
     @app.options("/orders/quote")
     @app.options("/orders/{order_id}")
+    @app.options("/orders/{order_id}/qr")
     async def orders_options(request: Request) -> Response:
         return Response(status_code=204, headers=orders_cors(request.headers.get("origin", "")))
 
@@ -232,14 +243,9 @@ def create_app(config: Config | None = None) -> FastAPI:
                 due = order["deposit"] if order["payMethod"] == "deposit" else order["total"]
                 if cfg.khqr_id and cfg.khqr_name and due > 0:
                     # a code made for this order: exact amount, expires, so the customer cannot mistype the price
-                    payload = khqr.build_payload(
-                        bakong_id=cfg.khqr_id, account_no=cfg.khqr_account, bank_name=cfg.khqr_bank, merchant_name=cfg.khqr_name,
-                        city=cfg.khqr_city, amount=due, bill_number=order_id, expires_in_minutes=cfg.khqr_minutes,
-                        mobile=cfg.khqr_mobile, bank_tag=tuple(p for p in cfg.khqr_bank_tag.split("|") if p))
-                    out["qrImage"] = khqr.png_data_uri(payload)
+                    out["qrImage"], md5, out["qrExpiresAt"] = new_qr(order_id, due)
                     # remember the code so Bakong can tell us when it was paid
-                    store.execute("UPDATE orders SET qr_md5 = ?, qr_due = ?, qr_expires = ? WHERE id = ?",
-                                  (hashlib.md5(payload.encode()).hexdigest(), due, int(time.time() * 1000) + cfg.khqr_minutes * 60_000, order_id))
+                    store.execute("UPDATE orders SET qr_md5 = ?, qr_due = ?, qr_expires = ? WHERE id = ?", (md5, due, out["qrExpiresAt"], order_id))
                 elif settings["qrImage"]:
                     out["qrImage"] = settings["qrImage"]  # not configured: the shop's own fixed QR picture
             if cfg.telegram_bot_token and cfg.telegram_chat_id:
@@ -265,6 +271,29 @@ def create_app(config: Config | None = None) -> FastAPI:
             return reply(200, {"cashAllowed": False, "radiusKm": settings["radiusKm"], "distanceKm": None, "fees": logic.shipping_fees(None, settings)}, h)
         km = logic.distance_km(settings["shop"], {"lat": lat, "lng": lng})
         return reply(200, {"cashAllowed": km <= settings["radiusKm"], "radiusKm": settings["radiusKm"], "distanceKm": logic.tidy(logic.rnd(km, 1)), "fees": logic.shipping_fees(km, settings)}, h)
+
+    @app.post("/orders/{order_id}/qr")
+    async def renew_qr(order_id: str, request: Request) -> Response:
+        """A new QR for an unpaid QR / deposit order whose code has expired (same order, same amount)."""
+        origin = request.headers.get("origin", "")
+        h = orders_cors(origin)
+        if origin not in cfg.allowed_origins:
+            return reply(403, {"error": "origin_not_allowed"}, h)
+        if not qr_limit.allow(client_ip(request)):
+            return reply(429, {"error": "too_many_requests"}, h)
+        row = store.one("SELECT id, token, status, total, paid, pay_method, qr_md5 FROM orders WHERE id = ?", (order_id,)) if re.fullmatch(r"MS\d{6}", order_id) else None
+        if not row or not secret_equal(request.headers.get("x-order-token", ""), row["token"]):
+            return reply(404, {"error": "not_found"}, h)
+        if row["pay_method"] not in ("khqr", "deposit") or row["status"] == "cancelled" or not (cfg.khqr_id and cfg.khqr_name):
+            return reply(409, {"error": "no_qr"}, h)
+        due = logic.deposit_of(row["total"]) if row["pay_method"] == "deposit" else row["total"]
+        if row["paid"] >= due:
+            return reply(409, {"error": "already_paid"}, h)
+        image_uri, md5, expires = new_qr(row["id"], due)
+        # keep the earlier codes too: someone may have paid with one of them in the last seconds
+        md5s = (row["qr_md5"].split() + [md5])[-5:]
+        store.execute("UPDATE orders SET qr_md5 = ?, qr_due = ?, qr_expires = ? WHERE id = ?", (" ".join(md5s), due, expires, row["id"]))
+        return reply(200, {"qrImage": image_uri, "qrExpiresAt": expires}, h)
 
     @app.get("/orders/{order_id}")
     async def order_status(order_id: str, request: Request) -> Response:

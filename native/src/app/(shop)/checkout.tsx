@@ -120,7 +120,7 @@ export default function Checkout() {
       if (ORDERS_API) {
         // the server works out the prices itself and gives the order its number
         const placed = await placeRemote({ ...base, items: lines.map((l) => ({ productId: l.productId, qty: l.qty, variant: l.variant })) });
-        order = { ...base, ...(placed.qrImage ? { qrImage: placed.qrImage } : {}), deposit: placed.deposit ?? 0, paid: placed.paid ?? 0, id: placed.id, createdAt: placed.createdAt, items: placed.items, subtotal: placed.subtotal, shipping: placed.shipping, total: placed.total, token: placed.token, status: placed.status };
+        order = { ...base, ...(placed.qrImage ? { qrImage: placed.qrImage } : {}), ...(placed.qrExpiresAt ? { qrExpiresAt: placed.qrExpiresAt } : {}), deposit: placed.deposit ?? 0, paid: placed.paid ?? 0, id: placed.id, createdAt: placed.createdAt, items: placed.items, subtotal: placed.subtotal, shipping: placed.shipping, total: placed.total, token: placed.token, status: placed.status };
       } else {
         // no server configured (local development): keep the order on this device only
         order = {

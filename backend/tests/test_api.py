@@ -460,3 +460,52 @@ def test_bakong_settings_from_env(monkeypatch):
     monkeypatch.setenv("BAKONG_PROXY", "http://p:3128")
     cfg = Config.from_env()
     assert cfg.bakong_token == "tok" and cfg.bakong_proxy == "http://p:3128" and cfg.bakong_api == "https://api-bakong.nbc.gov.kh"
+
+
+# ---- a new QR for an order whose code expired ----------------------------------------------------
+def _renew(c, order, token=None):
+    return c.post(f"/orders/{order['id']}/qr", headers={"Origin": SHOP, "X-Order-Token": order["token"] if token is None else token})
+
+
+def test_new_qr_for_the_same_order(tmp_path):
+    cfg, app, c = _qr_app(tmp_path)
+    order = _qr_order(c)
+    assert order["qrExpiresAt"] > time.time() * 1000
+    r = _renew(c, order)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["qrImage"].startswith("data:image/png;base64,") and body["qrImage"] != order["qrImage"] and body["qrExpiresAt"] >= order["qrExpiresAt"]
+    row = app.state.store.one("SELECT qr_md5, qr_due FROM orders WHERE id = ?", (order["id"],))
+    assert len(row["qr_md5"].split()) == 2 and row["qr_due"] == order["total"]  # the first code is still checked too
+    assert app.state.store.one("SELECT COUNT(*) AS n FROM orders")["n"] == 1  # no second order
+
+
+def test_new_qr_needs_the_order_token_and_an_unpaid_qr_order(tmp_path):
+    cfg, app, c = _qr_app(tmp_path)
+    order = _qr_order(c)
+    assert _renew(c, order, token="wrong").status_code == 404
+    assert c.post(f"/orders/{order['id']}/qr", headers={"X-Order-Token": order["token"]}).status_code == 403  # not from the shop website
+    assert c.post("/orders/MS999999/qr", headers={"Origin": SHOP, "X-Order-Token": "x"}).status_code == 404
+    app.state.store.execute("UPDATE orders SET paid = total WHERE id = ?", (order["id"],))
+    assert _renew(c, order).json() == {"error": "already_paid"}
+    p = c.post("/admin/api/products", headers=ADMIN, json={"title": "Mug", "price": 10, "category": "home", "description": "d"}).json()
+    cod = place(c, order_body(p, payMethod="cod")).json()
+    assert _renew(c, cod).json() == {"error": "no_qr"}
+    assert c.options(f"/orders/{order['id']}/qr", headers={"Origin": SHOP}).status_code == 204
+
+
+def test_bakong_checks_every_code_of_an_order(tmp_path):
+    from app import bakong
+
+    cfg, app, c = _qr_app(tmp_path, bakong_token="tok")
+    order = _qr_order(c)
+    first = app.state.store.one("SELECT qr_md5 FROM orders WHERE id = ?", (order["id"],))["qr_md5"]
+    assert _renew(c, order).status_code == 200
+    asked = []
+
+    def only_first_paid(api, token, md5, proxy=""):
+        asked.append(md5)
+        return ("paid", {"amount": order["total"], "currency": "USD"}) if md5 == first else ("unpaid", None)
+
+    assert bakong.settle_pending(app.state.store, cfg, check=only_first_paid) == 1  # paid with the code from before the renewal
+    assert asked == [first]  # found with the first code, no need to ask about the second

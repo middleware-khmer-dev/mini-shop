@@ -58,7 +58,11 @@ def settle_pending(store, cfg, check=check_md5, now_ms: int | None = None) -> in
     )
     done = 0
     for row in rows:
-        state, data = check(cfg.bakong_api, cfg.bakong_token, row["qr_md5"], cfg.bakong_proxy)
+        state, data = "unpaid", None
+        for md5 in row["qr_md5"].split():  # an order that got a new QR keeps its earlier codes too
+            state, data = check(cfg.bakong_api, cfg.bakong_token, md5, cfg.bakong_proxy)
+            if state == "paid":
+                break
         if state != "paid":
             continue
         data = data or {}
