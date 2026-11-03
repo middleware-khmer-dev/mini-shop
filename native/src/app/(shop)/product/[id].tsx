@@ -13,12 +13,14 @@ import { useReviews } from "@/lib/reviews";
 import { useFavorites } from "@/lib/favorites";
 import { haptic } from "@/lib/telegram";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 const SIZES = ["S", "M", "L", "XL"];
 // The API files some bags/accessories under "clothing"; those have no sizes
 const NOT_WEARABLE = /\b(backpack|bag|wallet|bracelet|necklace|ring|watch|earring)s?\b/i;
 
 export default function ProductScreen() {
+  const { c } = useTheme();
   const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { find, products, categories } = useProducts();
@@ -67,7 +69,7 @@ export default function ProductScreen() {
     add(product.id, qty, variant);
     router.push("/cart");
   };
-  const circle = "h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white shadow-md shadow-black/25";
+  const circle = "h-11 w-11 items-center justify-center rounded-full border border-black/5 dark:border-white/10 bg-surface shadow-md shadow-black/25";
 
   return (
     <>
@@ -77,7 +79,7 @@ export default function ProductScreen() {
           <View className="absolute inset-x-3 top-3 z-10 flex-row items-center justify-end md:hidden">
                         <View className="flex-row gap-2">
               <Pressable onPress={() => { toggle(product.id); haptic(); }} accessibilityLabel={t("product.wish")} className={circle}>
-                <Icon name="heart" size={18} color={wish ? "#e11d48" : "#374151"} fill={wish ? "#e11d48" : "none"} />
+                <Icon name="heart" size={18} color={wish ? "#e11d48" : "ink"} fill={wish ? "#e11d48" : "none"} />
               </Pressable>
               <Pressable accessibilityLabel={t("product.share")} className={circle}><Icon name="share" size={18} /></Pressable>
             </View>
@@ -86,8 +88,8 @@ export default function ProductScreen() {
 
         <Glass strong className="mt-3 gap-3 rounded-3xl p-5 md:mt-0 md:flex-1">
           <View className="flex-row items-center gap-2">
-            <View className="rounded-full bg-white/70 px-2.5 py-1"><Text className="text-[11px] font-semibold text-ink">{t(`cat.${product.category}`, { fallback: product.category ?? "" })}</Text></View>
-            {product.badge ? <View className="rounded-full bg-black px-2.5 py-1"><Text className="text-[11px] font-bold text-white">{product.badge}</Text></View> : null}
+            <View className="rounded-full bg-surface/70 px-2.5 py-1"><Text className="text-[11px] font-semibold text-ink">{t(`cat.${product.category}`, { fallback: product.category ?? "" })}</Text></View>
+            {product.badge ? <View className="rounded-full bg-primary px-2.5 py-1"><Text className="text-[11px] font-bold text-white">{product.badge}</Text></View> : null}
           </View>
           <Text className="text-xl font-bold text-ink" style={{ lineHeight: 26 }}>{product.name}</Text>
           <View className="flex-row items-center gap-1.5">
@@ -98,7 +100,7 @@ export default function ProductScreen() {
           <View className="flex-row items-center gap-2">
             <Text className="text-[26px] font-extrabold text-ink">{money(product.price)}</Text>
             {product.oldPrice ? <Text className="text-sm text-soft line-through">{money(product.oldPrice)}</Text> : null}
-            {off ? <View className="rounded-full bg-black px-2 py-0.5"><Text className="text-[11px] font-bold text-white">-{off}%</Text></View> : null}
+            {off ? <View className="rounded-full bg-primary px-2 py-0.5"><Text className="text-[11px] font-bold text-white">-{off}%</Text></View> : null}
           </View>
 
           {hasSizes ? (
@@ -106,7 +108,7 @@ export default function ProductScreen() {
             <Text className="text-sm font-bold text-ink">{t("product.size")}</Text>
             <View className="flex-row gap-2">
               {SIZES.map((s, i) => (
-                <Pressable key={s} onPress={() => setSize(i)} className={`min-w-11 items-center rounded-xl border px-3 py-2 ${size === i ? "border-white/35 bg-[#14141f]/85" : "border-glass-line bg-white/70"}`}>
+                <Pressable key={s} onPress={() => setSize(i)} className={`min-w-11 items-center rounded-xl border px-3 py-2 ${size === i ? "border-white/35 bg-primary/85" : "border-glass-line bg-surface/70"}`}>
                   <Text className={`text-[13px] font-bold ${size === i ? "text-white" : "text-ink"}`}>{s}</Text>
                 </Pressable>
               ))}
@@ -116,14 +118,14 @@ export default function ProductScreen() {
 
           <View className="flex-row items-center justify-between">
             <Text className="text-sm font-bold text-ink">{t("product.qty")}</Text>
-            <View className="flex-row items-center rounded-xl bg-white/80">
+            <View className="flex-row items-center rounded-xl bg-surface/80">
               <Pressable onPress={() => setQty(Math.max(1, qty - 1))} className="h-9 w-9 items-center justify-center"><Icon name="minus" size={16} /></Pressable>
               <Text className="w-8 text-center text-sm font-bold text-ink">{qty}</Text>
               <Pressable onPress={() => setQty(Math.min(99, qty + 1))} className="h-9 w-9 items-center justify-center"><Icon name="plus" size={16} /></Pressable>
             </View>
           </View>
 
-          <View className="flex-row gap-5 border-b border-white/60">
+          <View className="flex-row gap-5 border-b border-glass-line">
             {([["desc", t("product.details")], ["reviews", t("product.reviewsTab", { n: st.count })]] as const).map(([k, label]) => (
               <Pressable key={k} onPress={() => setTab(k)} className={`pb-2 ${tab === k ? "border-b-2 border-ink" : ""}`}>
                 <Text className={`text-[13px] font-semibold ${tab === k ? "text-ink" : "text-soft"}`}>{label}</Text>
@@ -143,20 +145,20 @@ export default function ProductScreen() {
               </View>
 
               {!session ? (
-                <Pressable onPress={() => router.push(`/login?redirect=/product/${product.id}`)} className="items-center rounded-xl bg-[#14141f] py-3">
+                <Pressable onPress={() => router.push(`/login?redirect=/product/${product.id}`)} className="items-center rounded-xl bg-primary py-3">
                   <Text className="text-[13px] font-bold text-white">{t("review.signIn")}</Text>
                 </Pressable>
               ) : mine && !editing ? (
                 <View className="flex-row gap-2">
-                  <Pressable onPress={() => setEditing(true)} className="flex-1 items-center rounded-xl border border-glass-line bg-white/70 py-2.5">
+                  <Pressable onPress={() => setEditing(true)} className="flex-1 items-center rounded-xl border border-glass-line bg-surface/70 py-2.5">
                     <Text className="text-[12.5px] font-bold text-ink">{t("review.edit")}</Text>
                   </Pressable>
-                  <Pressable onPress={() => remove(mine.id)} className="flex-1 items-center rounded-xl border border-glass-line bg-white/70 py-2.5">
+                  <Pressable onPress={() => remove(mine.id)} className="flex-1 items-center rounded-xl border border-glass-line bg-surface/70 py-2.5">
                     <Text className="text-[12.5px] font-bold text-red-500">{t("review.delete")}</Text>
                   </Pressable>
                 </View>
               ) : (
-                <View className="gap-2 rounded-2xl border border-glass-line bg-white/60 p-3">
+                <View className="gap-2 rounded-2xl border border-glass-line bg-surface/60 p-3">
                   <Text className="text-[13px] font-bold text-ink">{mine ? t("review.edit") : t("review.write")}</Text>
                   <Stars value={stars} onChange={setStars} size={28} />
                   <TextInput
@@ -165,11 +167,11 @@ export default function ProductScreen() {
                     onChangeText={setComment}
                     maxLength={500}
                     placeholder={t("review.placeholder")}
-                    placeholderTextColor="#a9adb8"
+                    placeholderTextColor={c.placeholder}
                     style={{ outlineStyle: "none", outlineWidth: 0 } as never}
-                    className="min-h-[72px] rounded-xl border border-glass-line bg-white/70 p-3 text-[13px] leading-5 text-ink"
+                    className="min-h-[72px] rounded-xl border border-glass-line bg-surface/70 p-3 text-[13px] leading-5 text-ink"
                   />
-                  <Pressable disabled={stars < 1} onPress={sendReview} className={`items-center rounded-xl bg-[#14141f] py-3 ${stars < 1 ? "opacity-50" : ""}`}>
+                  <Pressable disabled={stars < 1} onPress={sendReview} className={`items-center rounded-xl bg-primary py-3 ${stars < 1 ? "opacity-50" : ""}`}>
                     <Text className="text-[13px] font-bold text-white">{stars < 1 ? t("review.pickStars") : t("review.submit")}</Text>
                   </Pressable>
                 </View>
@@ -179,7 +181,7 @@ export default function ProductScreen() {
                 <Text className="text-[13px] text-soft">{t("review.empty")}</Text>
               ) : (
                 reviews.map((r) => (
-                  <View key={r.id} className="gap-1 border-t border-white/60 pt-3">
+                  <View key={r.id} className="gap-1 border-t border-glass-line pt-3">
                     <View className="flex-row items-center justify-between">
                       <Text className="text-[13px] font-bold text-ink">{r.author}</Text>
                       <Text className="text-[11px] text-soft">{new Date(r.createdAt).toLocaleDateString()}</Text>
@@ -200,10 +202,10 @@ export default function ProductScreen() {
           <Text className="text-[11px] text-soft">{t("common.total")}</Text>
           <Text numberOfLines={1} className="text-[17px] font-extrabold text-ink">{money(product.price * qty)}</Text>
         </View>
-        <Pressable onPress={addToCart} className="h-12 flex-1 items-center justify-center rounded-2xl border border-black/15 bg-white px-2">
+        <Pressable onPress={addToCart} className="h-12 flex-1 items-center justify-center rounded-2xl border border-black/15 dark:border-white/20 bg-surface px-2">
           <Text numberOfLines={2} className="text-center text-[13px] font-bold leading-4 text-ink">{added ? t("product.added") : t("card.add")}</Text>
         </Pressable>
-        <Pressable onPress={buyNow} className="h-12 flex-1 items-center justify-center rounded-2xl bg-[#14141f] px-2">
+        <Pressable onPress={buyNow} className="h-12 flex-1 items-center justify-center rounded-2xl bg-primary px-2">
           <Text numberOfLines={2} className="text-center text-[13px] font-bold leading-4 text-white">{t("product.buyNow")}</Text>
         </Pressable>
       </ActionBar>

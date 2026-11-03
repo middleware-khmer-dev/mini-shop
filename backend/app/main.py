@@ -362,6 +362,11 @@ def create_app(config: Config | None = None) -> FastAPI:
     async def admin_js() -> Response:
         return Response((STATIC / "admin.js").read_bytes(), headers={"content-type": "application/javascript; charset=utf-8", "cache-control": "no-store", **SECURITY})
 
+    @app.get("/admin/theme.js")
+    async def admin_theme_js() -> Response:
+        # tiny blocking script in <head>: applies the saved light/dark choice before first paint (CSP forbids inline scripts)
+        return Response((STATIC / "admin-theme.js").read_bytes(), headers={"content-type": "application/javascript; charset=utf-8", "cache-control": "no-store", **SECURITY})
+
     # ---- admin API (Authorization: Bearer <ADMIN_PASSWORD>) ----------------------------------
     @app.api_route("/admin/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
     async def admin_api(path: str, request: Request) -> Response:

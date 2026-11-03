@@ -11,8 +11,10 @@ import { useAuth } from "@/lib/auth";
 import { CheckoutSteps } from "@/components/CheckoutSteps";
 import { SHIPPING_DEFAULT, money, useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 export default function Cart() {
+  const { c } = useTheme();
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
   const { session } = useAuth();
@@ -26,17 +28,17 @@ export default function Cart() {
       <Screen title={t("cart.title", { n: count })} withActionBar={lines.length > 0} contentClassName="gap-4 pt-2">
         {lines.length === 0 ? (
           <View className="items-center gap-2 py-20">
-            <Icon name="cart" size={44} color="#9ca3af" />
+            <Icon name="cart" size={44} color="faint" />
             <Text className="text-base font-bold text-ink">{t("cart.empty")}</Text>
-            <Pressable onPress={() => router.push("/catalog")} className="mt-2 rounded-2xl bg-[#14141f] px-6 py-3">
+            <Pressable onPress={() => router.push("/catalog")} className="mt-2 rounded-2xl bg-primary px-6 py-3">
               <Text className="font-bold text-white">{t("cart.shop")}</Text>
             </Pressable>
           </View>
         ) : (
           <>
             <CheckoutSteps step={1} />
-            <Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className="flex-row items-center gap-1.5 self-end rounded-full bg-white/60 px-3 py-1.5">
-              <Icon name="trash" size={14} color="#6b7280" />
+            <Pressable onPress={clear} accessibilityLabel={t("cart.clear")} className="flex-row items-center gap-1.5 self-end rounded-full bg-surface/60 px-3 py-1.5">
+              <Icon name="trash" size={14} color="soft" />
               <Text className="text-[12px] font-semibold text-soft">{t("cart.clear")}</Text>
             </Pressable>
             {lines.map((l) => {
@@ -48,12 +50,12 @@ export default function Cart() {
                   <View className="flex-1 justify-between">
                     <View className="flex-row items-start justify-between gap-2">
                       <Text numberOfLines={2} ellipsizeMode="tail" style={{ lineHeight: 19, maxHeight: 38, overflow: "hidden" }} className="flex-1 text-[13.5px] font-semibold text-ink">{p.name}</Text>
-                      <Pressable onPress={() => remove(l.productId)} accessibilityLabel={t("cart.remove")}><Icon name="close" size={16} color="#6b7280" /></Pressable>
+                      <Pressable onPress={() => remove(l.productId)} accessibilityLabel={t("cart.remove")}><Icon name="close" size={16} color="soft" /></Pressable>
                     </View>
                     <Text className="text-[12px] text-soft">{l.variant}</Text>
                     <View className="flex-row items-center justify-between">
                       <Text className="text-base font-extrabold text-ink">{money(p.price * l.qty)}</Text>
-                      <View className="flex-row items-center rounded-xl bg-white/80">
+                      <View className="flex-row items-center rounded-xl bg-surface/80">
                         <Pressable onPress={() => setQty(l.productId, l.qty - 1)} accessibilityLabel={t("cart.dec")} className="h-8 w-8 items-center justify-center"><Icon name="minus" size={14} /></Pressable>
                         <Text className="w-6 text-center text-[13px] font-bold text-ink">{l.qty}</Text>
                         <Pressable onPress={() => setQty(l.productId, l.qty + 1)} accessibilityLabel={t("cart.inc")} className="h-8 w-8 items-center justify-center"><Icon name="plus" size={14} /></Pressable>
@@ -65,9 +67,9 @@ export default function Cart() {
             })}
 
             <Glass strong className="flex-row items-center gap-2 rounded-2xl p-2 pl-4">
-              <Icon name="gift" size={18} color="#6b7280" />
-              <TextInput value={promo} onChangeText={setPromo} editable={!applied} placeholder={applied ? t("cart.promoApplied") : t("cart.promoPh")} placeholderTextColor="#a9adb8" className="flex-1 py-2 text-[13px] text-ink" />
-              <Pressable onPress={() => promo.trim() && (setApplied(true), setPromo(""))} className="rounded-xl bg-black px-4 py-2.5"><Text className="text-[12.5px] font-bold text-white">{t("cart.apply")}</Text></Pressable>
+              <Icon name="gift" size={18} color="soft" />
+              <TextInput value={promo} onChangeText={setPromo} editable={!applied} placeholder={applied ? t("cart.promoApplied") : t("cart.promoPh")} placeholderTextColor={c.placeholder} className="flex-1 py-2 text-[13px] text-ink" />
+              <Pressable onPress={() => promo.trim() && (setApplied(true), setPromo(""))} className="rounded-xl bg-primary px-4 py-2.5"><Text className="text-[12.5px] font-bold text-white">{t("cart.apply")}</Text></Pressable>
             </Glass>
 
             <Text className="text-base font-bold text-ink">{t("cart.summary")}</Text>
@@ -75,7 +77,7 @@ export default function Cart() {
               <Row label={t("cart.subtotal")} value={money(subtotal)} />
               <Row label={t("cart.saved")} value={`-${money(saved)}`} green />
               <Row label={t("cart.shipping")} value={money(SHIPPING_DEFAULT)} />
-              <View className="my-1 h-px bg-white/70" />
+              <View className="my-1 h-px bg-surface/70" />
               <Row label={t("common.total")} value={money(total)} big />
             </Glass>
           </>
@@ -88,7 +90,7 @@ export default function Cart() {
             <Text className="text-[11px] text-soft">{t("common.totalAll")}</Text>
             <Text className="text-lg font-extrabold text-ink">{money(total)}</Text>
           </View>
-          <Pressable onPress={goPay} className="rounded-2xl bg-[#14141f] px-8 py-3.5"><Text className="text-[14px] font-bold text-white">{session ? t("cart.pay") : t("cart.signInToPay")}</Text></Pressable>
+          <Pressable onPress={goPay} className="rounded-2xl bg-primary px-8 py-3.5"><Text className="text-[14px] font-bold text-white">{session ? t("cart.pay") : t("cart.signInToPay")}</Text></Pressable>
         </ActionBar>
       ) : null}
     </>

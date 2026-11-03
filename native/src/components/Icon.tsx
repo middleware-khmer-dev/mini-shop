@@ -1,14 +1,20 @@
 import React from "react";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
+import { useTheme } from "@/lib/theme";
 
 export type IconName =
   | "home" | "grid" | "cart" | "user" | "shirt" | "bolt" | "sparkle" | "basket" | "gift" | "bell"
   | "search" | "filter" | "back" | "trash" | "close" | "plus" | "minus" | "heart" | "share" | "star"
   | "truck" | "cash" | "qr" | "card" | "pin" | "check" | "download" | "image";
 
+/** `color` is a CSS color, or a theme token: "ink" (default), "soft", "faint", "star-off". */
 type Props = { name: IconName; size?: number; color?: string; fill?: string };
 
-export function Icon({ name, size = 20, color = "#111", fill = "none" }: Props) {
+export function Icon({ name, size = 20, color: colorProp = "ink", fill: fillProp = "none" }: Props) {
+  const { c } = useTheme();
+  const tokens: Record<string, string> = { ink: c.icon, soft: c.iconSoft, faint: c.faint, "star-off": c.star };
+  const color = tokens[colorProp] ?? colorProp;
+  const fill = tokens[fillProp] ?? fillProp;
   const p = { stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", fill: "none" } as const;
   let body: React.ReactNode;
   switch (name) {

@@ -37,7 +37,7 @@ export function ProductCard({ product }: { product: Product }) {
         <View className="aspect-square w-full">
           <Media product={product} className="flex-1" />
           {product.badge ? (
-            <View className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5">
+            <View className="absolute left-2 top-2 rounded-full bg-surface px-2 py-0.5">
               <Text className="text-[11px] font-bold text-ink">{product.badge}</Text>
             </View>
           ) : null}
@@ -51,9 +51,9 @@ export function ProductCard({ product }: { product: Product }) {
               toggle(product.id);
               haptic();
             }}
-            className="absolute right-2 top-2 h-9 w-9 items-center justify-center rounded-full bg-white/90 active:scale-90"
+            className="absolute right-2 top-2 h-9 w-9 items-center justify-center rounded-full bg-surface/90 active:scale-90"
           >
-            <Icon name="heart" size={17} color={fav ? "#e11d48" : "#6b7280"} fill={fav ? "#e11d48" : "none"} />
+            <Icon name="heart" size={17} color={fav ? "#e11d48" : "soft"} fill={fav ? "#e11d48" : "none"} />
           </Pressable>
         </View>
         <View className="gap-1.5 p-3">
@@ -78,7 +78,7 @@ export function ProductCard({ product }: { product: Product }) {
                 add(product.id, 1);
                 haptic();
               }}
-              className="h-8 w-8 items-center justify-center rounded-xl bg-ink active:scale-90"
+              className="h-8 w-8 items-center justify-center rounded-xl bg-primary active:scale-90"
             >
               <Icon name="plus" size={16} color="#fff" />
             </Pressable>

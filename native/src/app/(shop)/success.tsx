@@ -7,6 +7,7 @@ import { Screen } from "@/components/Screen";
 import { Lang, useI18n } from "@/lib/i18n";
 import { DownloadKind, InvoiceLabels, downloadInvoice } from "@/lib/invoice";
 import { useTelegram } from "@/lib/telegram";
+import { useTheme } from "@/lib/theme";
 import { Order, OrderItem, useOrders } from "@/lib/orders";
 import { money } from "@/lib/cart";
 import { DEPOSIT_PERCENT } from "@/data/shop";
@@ -49,6 +50,7 @@ function labelsFor(order: Order, t: (k: string) => string, _lang: Lang): Invoice
 
 export default function Invoice() {
   const { t, lang } = useI18n();
+  const { paper, c } = useTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { find, setStatus, setQr } = useOrders();
   const { inTelegram } = useTelegram();
@@ -104,9 +106,9 @@ export default function Invoice() {
   if (!order) {
     return (
       <Screen contentClassName="items-center gap-4 pt-24">
-        <Icon name="close" size={36} color="#9ca3af" />
+        <Icon name="close" size={36} color="faint" />
         <Text className="text-base font-bold text-ink">{t("invoice.notFound")}</Text>
-        <Pressable onPress={() => router.replace("/home")} className="rounded-2xl bg-[#14141f] px-6 py-3">
+        <Pressable onPress={() => router.replace("/home")} className="rounded-2xl bg-primary px-6 py-3">
           <Text className="font-bold text-white">{t("success.home")}</Text>
         </Pressable>
       </Screen>
@@ -142,7 +144,7 @@ export default function Invoice() {
         {awaiting ? (
           <View className="mt-1 w-full items-center gap-2">
             <Text className="px-4 text-center text-[12.5px] leading-5 text-soft">{t("pay.waitSub")}</Text>
-            <Pressable onPress={refreshStatus} accessibilityLabel={t("order.refresh")} className="rounded-full bg-white/80 px-4 py-1.5">
+            <Pressable onPress={refreshStatus} accessibilityLabel={t("order.refresh")} className="rounded-full bg-surface/80 px-4 py-1.5">
               <Text className="text-[12px] font-semibold text-soft">{t("order.refresh")}</Text>
             </Pressable>
           </View>
@@ -154,7 +156,7 @@ export default function Invoice() {
                 {order.paid >= order.total ? t("pay.paidFull") : order.paid > 0 ? t("pay.paidPart", { paid: money(order.paid), due: money(order.total - order.paid) }) : order.payMethod === "cod" ? t("invoice.status.cod") : t("pay.paidNone")}
               </Text>
             ) : null}
-            <Pressable onPress={refreshStatus} accessibilityLabel={t("order.refresh")} className="rounded-full bg-white/80 px-4 py-1.5">
+            <Pressable onPress={refreshStatus} accessibilityLabel={t("order.refresh")} className="rounded-full bg-surface/80 px-4 py-1.5">
               <Text className="text-[12px] font-semibold text-soft">{t("order.refresh")}</Text>
             </Pressable>
           </View>
@@ -162,7 +164,7 @@ export default function Invoice() {
       </View>
 
       {awaiting ? (
-        <View className="w-full max-w-[440px] items-center gap-2 rounded-3xl bg-white p-5 shadow-lg shadow-black/10">
+        <View style={paper} className="w-full max-w-[440px] items-center gap-2 rounded-3xl bg-white p-5 shadow-lg shadow-black/10">
           <Text className="text-[15px] font-extrabold text-ink">{t("qr.title")}</Text>
           {order.qrImage ? (
             <View style={{ width: 240, height: 240 }}>
@@ -181,7 +183,7 @@ export default function Invoice() {
             <Pressable
               disabled={renewing}
               onPress={renew}
-              className={`h-11 w-full items-center justify-center rounded-2xl ${expired ? "bg-[#14141f]" : "border border-black/15 bg-white"} ${renewing ? "opacity-70" : ""}`}
+              className={`h-11 w-full items-center justify-center rounded-2xl ${expired ? "bg-primary" : "border border-black/15 dark:border-white/20 bg-surface"} ${renewing ? "opacity-70" : ""}`}
             >
               <Text className={`text-[13.5px] font-bold ${expired ? "text-white" : "text-ink"}`}>{renewing ? t("qr.renewing") : t("qr.renew")}</Text>
             </Pressable>
@@ -197,8 +199,8 @@ export default function Invoice() {
 
       {/* the invoice, laid out like a paper receipt (issued once the payment is received) */}
       {awaiting ? null : (
-      <View className="w-full max-w-[440px] overflow-hidden rounded-3xl bg-white shadow-lg shadow-black/10">
-        <View className="h-2 bg-[#14141f]" />
+      <View style={paper} className="w-full max-w-[440px] overflow-hidden rounded-3xl bg-white shadow-lg shadow-black/10">
+        <View className="h-2 bg-primary" />
         <View className="gap-4 p-5">
           <View className="flex-row items-start justify-between">
             <View>
@@ -253,7 +255,7 @@ export default function Invoice() {
         <Pressable
           disabled={busy !== null}
           onPress={() => download("pdf")}
-          className={`h-12 flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] ${busy ? "opacity-70" : ""}`}
+          className={`h-12 flex-row items-center justify-center gap-2 rounded-2xl bg-primary ${busy ? "opacity-70" : ""}`}
         >
           {busy === "pdf" ? <ActivityIndicator color="#fff" size="small" /> : <Icon name="download" size={18} color="#fff" />}
           <Text className="text-[14px] font-bold text-white">{busy === "pdf" ? t("invoice.preparing") : t("invoice.download")}</Text>
@@ -262,9 +264,9 @@ export default function Invoice() {
           <Pressable
             disabled={busy !== null}
             onPress={() => download("png")}
-            className={`h-12 flex-row items-center justify-center gap-2 rounded-2xl border border-black/15 bg-white ${busy ? "opacity-70" : ""}`}
+            className={`h-12 flex-row items-center justify-center gap-2 rounded-2xl border border-black/15 dark:border-white/20 bg-surface ${busy ? "opacity-70" : ""}`}
           >
-            {busy === "png" ? <ActivityIndicator color="#111" size="small" /> : <Icon name="image" size={18} color="#111" />}
+            {busy === "png" ? <ActivityIndicator color={c.icon} size="small" /> : <Icon name="image" size={18} color="ink" />}
             <Text className="text-[14px] font-bold text-ink">{busy === "png" ? t("invoice.preparing") : t("invoice.saveImage")}</Text>
           </Pressable>
         ) : null}
@@ -272,10 +274,10 @@ export default function Invoice() {
         {inTelegram ? <Text className="px-2 text-center text-[11.5px] leading-4 text-soft">{t("invoice.hint")}</Text> : null}
         </>)}
         <View className="flex-row gap-2.5">
-          <Pressable onPress={() => router.replace("/home")} className="h-12 flex-1 items-center justify-center rounded-2xl border border-glass-line bg-white/70">
+          <Pressable onPress={() => router.replace("/home")} className="h-12 flex-1 items-center justify-center rounded-2xl border border-glass-line bg-surface/70">
             <Text className="text-[13px] font-bold text-ink">{t("success.home")}</Text>
           </Pressable>
-          <Pressable onPress={() => router.replace("/catalog")} className="h-12 flex-1 items-center justify-center rounded-2xl border border-glass-line bg-white/70">
+          <Pressable onPress={() => router.replace("/catalog")} className="h-12 flex-1 items-center justify-center rounded-2xl border border-glass-line bg-surface/70">
             <Text className="text-[13px] font-bold text-ink">{t("success.more")}</Text>
           </Pressable>
         </View>
@@ -283,7 +285,7 @@ export default function Invoice() {
 
       <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
         <View className="flex-1 bg-black/70 px-3 py-10">
-          <View className="flex-1 overflow-hidden rounded-3xl bg-white">
+          <View style={paper} className="flex-1 overflow-hidden rounded-3xl bg-white">
             <ScrollView contentContainerClassName="p-3">
               {viewer ? (
                 <Image source={{ uri: viewer.imageUrl }} resizeMode="contain" accessibilityLabel={`${L.title} #${order.id}`} style={{ width: "100%", aspectRatio: viewer.width / viewer.height }} />
@@ -291,7 +293,7 @@ export default function Invoice() {
             </ScrollView>
             <View className="gap-2 border-t border-gray-100 p-3">
               <Text className="text-center text-[12.5px] leading-5 text-soft">{t("invoice.holdToSave")}</Text>
-              <Pressable onPress={() => setViewer(null)} className="h-11 items-center justify-center rounded-2xl bg-[#14141f]">
+              <Pressable onPress={() => setViewer(null)} className="h-11 items-center justify-center rounded-2xl bg-primary">
                 <Text className="text-[14px] font-bold text-white">{t("invoice.close")}</Text>
               </Pressable>
             </View>

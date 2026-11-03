@@ -8,8 +8,10 @@ import { Screen } from "@/components/Screen";
 import { StatusBanner } from "@/components/StatusBanner";
 import { useProducts } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 export default function Catalog() {
+  const { c } = useTheme();
   const { t } = useI18n();
   const params = useLocalSearchParams<{ cat?: string; focus?: string }>();
   const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
@@ -42,13 +44,13 @@ export default function Catalog() {
   return (
     <Screen title={t("catalog.title")} contentClassName="gap-4 pt-2">
       <Glass strong className="flex-row items-center gap-2 rounded-full px-4">
-        <Icon name="search" size={16} color="#6b7280" />
+        <Icon name="search" size={16} color="soft" />
         <TextInput
           ref={inputRef}
           value={query}
           onChangeText={setQuery}
           placeholder={t("catalog.search")}
-          placeholderTextColor="#a9adb8"
+          placeholderTextColor={c.placeholder}
           autoFocus={params.focus === "1"}
           returnKeyType="search"
           autoCorrect={false}
@@ -65,7 +67,7 @@ export default function Catalog() {
             }}
             className="h-6 w-6 items-center justify-center rounded-full bg-black/10"
           >
-            <Icon name="close" size={12} color="#374151" />
+            <Icon name="close" size={12} color="ink" />
           </Pressable>
         ) : null}
       </Glass>
@@ -74,7 +76,7 @@ export default function Catalog() {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
         {chips.map((c) => (
-          <Pressable key={c.id} onPress={() => setActive(c.id)} className={`rounded-full border px-4 py-2 ${active === c.id ? "border-white/35 bg-[#14141f]/85" : "border-glass-line bg-white/55"}`}>
+          <Pressable key={c.id} onPress={() => setActive(c.id)} className={`rounded-full border px-4 py-2 ${active === c.id ? "border-white/35 bg-primary/85" : "border-glass-line bg-surface/55"}`}>
             <Text className={`text-[12.5px] font-semibold ${active === c.id ? "text-white" : "text-ink"}`}>{c.label}</Text>
           </Pressable>
         ))}
@@ -82,14 +84,14 @@ export default function Catalog() {
 
       <View className="flex-row items-center justify-between">
         <Text className="text-[12.5px] text-soft">{t("catalog.showing", { n: list.length })}</Text>
-        <Pressable onPress={() => setSort(((sort + 1) % 3) as 0 | 1 | 2)} className="rounded-full border border-glass-line bg-white/55 px-3 py-1.5">
+        <Pressable onPress={() => setSort(((sort + 1) % 3) as 0 | 1 | 2)} className="rounded-full border border-glass-line bg-surface/55 px-3 py-1.5">
           <Text className="text-[12px] font-semibold text-ink">{sort === 1 ? t("catalog.sort") : sort === 2 ? t("catalog.sortDesc") : t("catalog.sortOff")}</Text>
         </Pressable>
       </View>
 
       {list.length === 0 ? (
         <View className="items-center gap-1 py-16">
-          <Icon name="search" size={36} color="#9ca3af" />
+          <Icon name="search" size={36} color="faint" />
           <Text className="font-bold text-ink">{t("catalog.empty")}</Text>
           <Text className="text-[12.5px] text-soft">{t("catalog.emptySub")}</Text>
         </View>

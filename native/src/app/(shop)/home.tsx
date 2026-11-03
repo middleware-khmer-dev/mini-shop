@@ -40,8 +40,8 @@ export default function Home() {
         </View>
         <View className="flex-row items-center gap-2">
           <LangSwitch />
-          <Pressable onPress={() => router.push("/cart")} accessibilityLabel={t("nav.cart")} className="h-10 w-10 items-center justify-center rounded-xl border border-glass-line bg-white/70">
-            <Icon name="cart" size={18} color="#111" />
+          <Pressable onPress={() => router.push("/cart")} accessibilityLabel={t("nav.cart")} className="h-10 w-10 items-center justify-center rounded-xl border border-glass-line bg-surface/70">
+            <Icon name="cart" size={18} color="ink" />
             {count > 0 ? (
               <View className="absolute -right-1 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1">
                 <Text className="text-[9.5px] font-extrabold text-white">{count}</Text>
@@ -53,9 +53,9 @@ export default function Home() {
 
       <Pressable onPress={() => router.push({ pathname: "/catalog", params: { focus: "1" } })}>
         <Glass strong className="flex-row items-center gap-3 rounded-full px-4 py-3">
-          <Icon name="search" size={16} color="#6b7280" />
+          <Icon name="search" size={16} color="soft" />
           <Text className="flex-1 text-[13.5px] text-soft">{t("home.search")}</Text>
-          <Icon name="filter" size={15} color="#111" />
+          <Icon name="filter" size={15} color="ink" />
         </Glass>
       </Pressable>
 

@@ -9,9 +9,9 @@ export function StatusBanner() {
   if (loading) return <ActivityIndicator className="my-2" />;
   if (error && offline)
     return (
-      <Pressable onPress={reload} className="flex-row items-center justify-between rounded-2xl bg-amber-100/80 px-4 py-3">
-        <Text className="flex-1 text-[12.5px] text-amber-900">{t("banner.offline")}</Text>
-        <Text className="text-[12.5px] font-bold text-amber-900">{t("banner.retry")}</Text>
+      <Pressable onPress={reload} className="flex-row items-center justify-between rounded-2xl bg-amber-100/80 dark:bg-amber-500/20 px-4 py-3">
+        <Text className="flex-1 text-[12.5px] text-amber-900 dark:text-amber-200">{t("banner.offline")}</Text>
+        <Text className="text-[12.5px] font-bold text-amber-900 dark:text-amber-200">{t("banner.retry")}</Text>
       </Pressable>
     );
   return null;

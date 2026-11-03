@@ -16,6 +16,7 @@ import { useI18n } from "@/lib/i18n";
 import { Order, newOrderId, useOrders } from "@/lib/orders";
 import { CashQuote, ORDERS_API, OrderError, placeOrder as placeRemote, quoteCash } from "@/lib/api";
 import { useAddresses } from "@/lib/address";
+import { useTheme } from "@/lib/theme";
 
 type Opt = { id: string; icon: string; price?: number };
 
@@ -28,16 +29,16 @@ function OptionList({ options, value, onChange, prefix, disabled = [] }: { optio
         const off = disabled.includes(o.id);
         return (
           <Pressable key={o.id} disabled={off} onPress={() => onChange(o.id)} accessibilityState={{ disabled: off }}>
-            <Glass strong={on} className={`flex-row items-center gap-3 rounded-2xl p-3 ${on ? "border-2 border-[#14141f]" : ""} ${off ? "opacity-45" : ""}`}>
-              <View className={`h-10 w-10 items-center justify-center rounded-xl ${on ? "bg-[#14141f]" : "bg-white/70"}`}>
-                <Icon name={o.icon as IconName} size={18} color={on ? "#fff" : "#111"} />
+            <Glass strong={on} className={`flex-row items-center gap-3 rounded-2xl p-3 ${on ? "border-2 border-primary" : ""} ${off ? "opacity-45" : ""}`}>
+              <View className={`h-10 w-10 items-center justify-center rounded-xl ${on ? "bg-primary" : "bg-surface/70"}`}>
+                <Icon name={o.icon as IconName} size={18} color={on ? "#fff" : "ink"} />
               </View>
               <View className="flex-1">
                 <Text className="text-[13.5px] font-bold text-ink">{t(`${prefix}.${o.id}.title`)}</Text>
                 <Text className="text-[12px] text-soft">{t(`${prefix}.${o.id}.sub`)}</Text>
               </View>
               {o.price != null ? <Text className="text-[13px] font-bold text-ink">{money(o.price)}</Text> : null}
-              <View className={`h-5 w-5 items-center justify-center rounded-full ${on ? "bg-[#14141f]" : "border-2 border-gray-300"}`}>
+              <View className={`h-5 w-5 items-center justify-center rounded-full ${on ? "bg-primary" : "border-2 border-line"}`}>
                 {on ? <Icon name="check" size={12} color="#fff" /> : null}
               </View>
             </Glass>
@@ -51,6 +52,7 @@ function OptionList({ options, value, onChange, prefix, disabled = [] }: { optio
 const H = ({ children }: { children: string }) => <Text className="text-base font-bold text-ink">{children}</Text>;
 
 export default function Checkout() {
+  const { c } = useTheme();
   const [placing, setPlacing] = useState(false);
   const { t } = useI18n();
   const { find: findProduct } = useProducts();
@@ -161,23 +163,23 @@ export default function Checkout() {
           const on = a.id === selected?.id;
           return (
             <Pressable key={a.id} onPress={() => select(a.id)}>
-              <Glass strong={on} className={`flex-row items-start gap-3 rounded-2xl p-3 ${on ? "border-2 border-[#14141f]" : ""}`}>
-                <View className={`h-10 w-10 items-center justify-center rounded-xl ${on ? "bg-[#14141f]" : "bg-white/70"}`}>
-                  <Icon name="pin" size={18} color={on ? "#fff" : "#111"} />
+              <Glass strong={on} className={`flex-row items-start gap-3 rounded-2xl p-3 ${on ? "border-2 border-primary" : ""}`}>
+                <View className={`h-10 w-10 items-center justify-center rounded-xl ${on ? "bg-primary" : "bg-surface/70"}`}>
+                  <Icon name="pin" size={18} color={on ? "#fff" : "ink"} />
                 </View>
                 <View className="flex-1 gap-0.5">
                   <Text className="text-[13.5px] font-bold text-ink">{t(`address.label.${a.label}`)}  <Text className="font-normal text-soft">{customer.name} · {customer.phone}</Text></Text>
                   <Text className="text-[12.5px] leading-5 text-soft">{a.address}</Text>
                 </View>
-                <View className={`h-5 w-5 items-center justify-center rounded-full ${on ? "bg-[#14141f]" : "border-2 border-gray-300"}`}>
+                <View className={`h-5 w-5 items-center justify-center rounded-full ${on ? "bg-primary" : "border-2 border-line"}`}>
                   {on ? <Icon name="check" size={12} color="#fff" /> : null}
                 </View>
               </Glass>
             </Pressable>
           );
         })}
-        <Pressable onPress={() => router.push("/address")} className="flex-row items-center justify-center gap-2 rounded-2xl border border-glass-line bg-white/70 py-3">
-          <Icon name={addresses.length === 0 ? "plus" : "pin"} size={15} color="#14141f" />
+        <Pressable onPress={() => router.push("/address")} className="flex-row items-center justify-center gap-2 rounded-2xl border border-glass-line bg-surface/70 py-3">
+          <Icon name={addresses.length === 0 ? "plus" : "pin"} size={15} color="ink" />
           <Text className="text-[12.5px] font-bold text-ink">{addresses.length === 0 ? t("checkout.addAddress") : t("checkout.manageAddress")}</Text>
         </Pressable>
 
@@ -207,17 +209,17 @@ export default function Checkout() {
         </Glass>
 
         <H>{t("checkout.note")}</H>
-        <TextInput multiline numberOfLines={2} value={note} onChangeText={setNote} maxLength={500} placeholder={t("checkout.notePh")} placeholderTextColor="#a9adb8" className="min-h-[64px] rounded-2xl border border-glass-line bg-white/60 p-3 text-[13px] text-ink" />
+        <TextInput multiline numberOfLines={2} value={note} onChangeText={setNote} maxLength={500} placeholder={t("checkout.notePh")} placeholderTextColor={c.placeholder} className="min-h-[64px] rounded-2xl border border-glass-line bg-surface/60 p-3 text-[13px] text-ink" />
 
         <Glass strong className="gap-2.5 rounded-3xl p-4">
           <Row label={t("cart.subtotal")} value={money(subtotal)} />
           <Row label={t("cart.shipping")} value={money(shipping)} />
-          <View className="my-1 h-px bg-white/70" />
+          <View className="my-1 h-px bg-surface/70" />
           <Row label={t("common.total")} value={money(total)} big />
         </Glass>
         {error ? (
-          <View className="rounded-2xl border border-red-200 bg-red-50 p-3">
-            <Text className="text-[13px] leading-5 text-red-700">{error}</Text>
+          <View className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-400/30 dark:bg-red-500/15 p-3">
+            <Text className="text-[13px] leading-5 text-red-700 dark:text-red-300">{error}</Text>
           </View>
         ) : null}
         <View className="flex-row items-center justify-center gap-1.5 pb-1">
@@ -234,7 +236,7 @@ export default function Checkout() {
         <Pressable
           disabled={lines.length === 0 || placing || !selected || ((pay === "cod" || pay === "deposit") && checking)}
           onPress={placeOrder}
-          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-[#14141f] px-8 py-3.5 ${lines.length === 0 || placing || !selected || ((pay === "cod" || pay === "deposit") && checking) ? "opacity-70" : ""}`}
+          className={`min-w-[170px] flex-row items-center justify-center gap-2 rounded-2xl bg-primary px-8 py-3.5 ${lines.length === 0 || placing || !selected || ((pay === "cod" || pay === "deposit") && checking) ? "opacity-70" : ""}`}
         >
           {placing ? <ActivityIndicator color="#fff" size="small" /> : null}
           <Text className="text-[14px] font-bold text-white">{placing ? t("checkout.processing") : t("checkout.place")}</Text>

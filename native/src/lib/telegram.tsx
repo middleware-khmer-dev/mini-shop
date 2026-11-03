@@ -1,3 +1,4 @@
+import { PALETTE, Palette, useTheme } from "@/lib/theme";
 import { usePathname } from "expo-router";
 import { goBack } from "@/lib/nav";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -88,7 +89,7 @@ const EVENTS = ["safeAreaChanged", "contentSafeAreaChanged", "viewportChanged", 
  * background and bottom bar so they blend in instead of showing a white bar on top and a black
  * strip at the bottom.
  */
-function styleTelegram(tg: WebApp) {
+function styleTelegram(tg: WebApp, p: Palette = PALETTE.light) {
   const ok = (v: string) => {
     try {
       return tg.isVersionAtLeast ? tg.isVersionAtLeast(v) : false;
@@ -104,11 +105,21 @@ function styleTelegram(tg: WebApp) {
     }
   };
   if (ok("6.9")) {
-    run(() => tg.setHeaderColor?.("#f6ecfb"));
-    run(() => tg.setBackgroundColor?.("#ece8ff"));
+    run(() => tg.setHeaderColor?.(p.tgHeader));
+    run(() => tg.setBackgroundColor?.(p.canvas));
   }
-  if (ok("7.10")) run(() => tg.setBottomBarColor?.("#ffffff"));
+  if (ok("7.10")) run(() => tg.setBottomBarColor?.(p.tgBottom));
   if (ok("8.0") && !tg.isFullscreen) run(() => tg.requestFullscreen?.());
+}
+
+/** Re-colours Telegram's header / background / bottom bar when the app theme changes. */
+export function TelegramTheme() {
+  const { c } = useTheme();
+  useEffect(() => {
+    const tg = getWebApp();
+    if (isRealTelegram(tg)) styleTelegram(tg as WebApp, c);
+  }, [c]);
+  return null;
 }
 
 /**

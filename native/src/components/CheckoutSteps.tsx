@@ -16,12 +16,12 @@ export function CheckoutSteps({ step }: { step: 1 | 2 | 3 }) {
         return (
           <React.Fragment key={label}>
             <View className="items-center gap-1">
-              <View className={`h-7 w-7 items-center justify-center rounded-full ${done || active ? "bg-[#14141f]" : "bg-white/70"}`}>
+              <View className={`h-7 w-7 items-center justify-center rounded-full ${done || active ? "bg-primary" : "bg-surface/70"}`}>
                 {done ? <Icon name="check" size={14} color="#fff" /> : <Text className={`text-[12px] font-bold ${active ? "text-white" : "text-soft"}`}>{n}</Text>}
               </View>
               <Text className={`text-[11px] ${active ? "font-bold text-ink" : "text-soft"}`}>{label}</Text>
             </View>
-            {n < 3 ? <View className={`mx-2 mb-4 h-0.5 flex-1 rounded-full ${done ? "bg-[#14141f]" : "bg-white/70"}`} /> : null}
+            {n < 3 ? <View className={`mx-2 mb-4 h-0.5 flex-1 rounded-full ${done ? "bg-primary" : "bg-surface/70"}`} /> : null}
           </React.Fragment>
         );
       })}
