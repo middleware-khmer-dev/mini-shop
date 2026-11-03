@@ -224,6 +224,9 @@ def test_admin_page_and_script(client):
     assert client.get("/admin/").status_code == 200
     js = client.get("/admin/app.js")
     assert js.status_code == 200 and "javascript" in js.headers["content-type"] and "ms_admin" in js.text
+    theme = client.get("/admin/theme.js")  # applies the saved light/dark choice before first paint
+    assert theme.status_code == 200 and "javascript" in theme.headers["content-type"] and "admin_theme" in theme.text
+    assert 'src="/admin/theme.js"' in r.text and 'data-theme=dark' in r.text and "prefers-color-scheme:dark" in r.text
     assert client.get("/nothing").json() == {"error": "not_found"}
 
 

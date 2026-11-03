@@ -5,6 +5,7 @@ import { Glass } from "@/components/Glass";
 import { Icon } from "@/components/Icon";
 import { LangSwitch } from "@/components/LangSwitch";
 import { Screen } from "@/components/Screen";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { useAddresses } from "@/lib/address";
 import { useOrders } from "@/lib/orders";
 import { useFavorites } from "@/lib/favorites";
@@ -20,7 +21,7 @@ export default function Profile() {
   return (
     <Screen title={t("profile.title")} contentClassName="gap-4 pt-2">
       <Glass strong className="flex-row items-center gap-4 rounded-3xl p-5">
-        <View className="h-14 w-14 items-center justify-center rounded-full bg-[#14141f]"><Icon name="user" size={26} color="#fff" /></View>
+        <View className="h-14 w-14 items-center justify-center rounded-full bg-primary"><Icon name="user" size={26} color="#fff" /></View>
         <View className="flex-1">
           <Text className="text-lg font-bold text-ink">{session ? session.user.name : t("common.guest")}</Text>
           <Text className="text-[13px] text-soft">{session ? session.user.phone : t("profile.loginHint")}</Text>
@@ -29,7 +30,7 @@ export default function Profile() {
       <Pressable onPress={() => router.push("/orders")}>
         <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
           <View className="flex-row items-center gap-3">
-            <Icon name="truck" size={18} color="#14141f" />
+            <Icon name="truck" size={18} color="ink" />
             <Text className="text-[14px] font-bold text-ink">{t("orders.title")}</Text>
           </View>
           <Text className="text-[13px] text-soft">{orders.length}</Text>
@@ -38,7 +39,7 @@ export default function Profile() {
       <Pressable onPress={() => router.push("/address")}>
         <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
           <View className="flex-row items-center gap-3">
-            <Icon name="pin" size={18} color="#14141f" />
+            <Icon name="pin" size={18} color="ink" />
             <Text className="text-[14px] font-bold text-ink">{t("address.title")}</Text>
           </View>
           <Text className="text-[13px] text-soft">{addresses.length}</Text>
@@ -57,12 +58,16 @@ export default function Profile() {
         <Text className="text-[14px] font-bold text-ink">{t("lang.title")}</Text>
         <LangSwitch />
       </Glass>
+      <Glass strong className="flex-row items-center justify-between rounded-2xl p-4">
+        <Text className="text-[14px] font-bold text-ink">{t("theme.title")}</Text>
+        <ThemeSwitch />
+      </Glass>
       {session ? (
-        <Pressable onPress={async () => { await logout(); router.replace("/home"); }} className="items-center rounded-2xl border border-glass-line bg-white/70 py-3.5">
+        <Pressable onPress={async () => { await logout(); router.replace("/home"); }} className="items-center rounded-2xl border border-glass-line bg-surface/70 py-3.5">
           <Text className="font-bold text-red-500">{t("profile.logout")}</Text>
         </Pressable>
       ) : (
-        <Pressable onPress={() => router.push("/login")} className="items-center rounded-2xl bg-[#14141f] py-3.5">
+        <Pressable onPress={() => router.push("/login")} className="items-center rounded-2xl bg-primary py-3.5">
           <Text className="font-bold text-white">{t("profile.login")}</Text>
         </Pressable>
       )}

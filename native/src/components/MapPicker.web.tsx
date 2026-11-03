@@ -7,12 +7,14 @@ import { DEFAULT_CENTER, Place, reverseGeocode, searchPlace, SearchHit } from "@
 import { useI18n } from "@/lib/i18n";
 import { haptic } from "@/lib/telegram";
 import type { MapPickerProps } from "./MapPicker";
+import { useTheme } from "@/lib/theme";
 
 /**
  * OpenStreetMap map with a fixed pin in the middle: drag the map to move the pin, or search a place,
  * or use the phone's location. Every move looks up the street address and reports it.
  */
 export function MapPicker({ value, onChange }: MapPickerProps) {
+  const { c, dark } = useTheme();
   const { t, lang } = useI18n();
   const el = useRef<HTMLDivElement | null>(null);
   const map = useRef<L.Map | null>(null);
@@ -87,22 +89,22 @@ export function MapPicker({ value, onChange }: MapPickerProps) {
 
   return (
     <View className="gap-2">
-      <View className="flex-row items-center gap-2 rounded-full border border-glass-line bg-white/70 px-3">
-        <Icon name="search" size={15} color="#6b7280" />
+      <View className="flex-row items-center gap-2 rounded-full border border-glass-line bg-surface/70 px-3">
+        <Icon name="search" size={15} color="soft" />
         <TextInput
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={search}
           placeholder={t("map.search")}
-          placeholderTextColor="#a9adb8"
+          placeholderTextColor={c.placeholder}
           returnKeyType="search"
           style={{ outlineStyle: "none", outlineWidth: 0, minWidth: 0 } as never}
           className="min-w-0 flex-1 py-2.5 text-[13px] text-ink"
         />
-        {busy ? <ActivityIndicator size="small" color="#6b7280" /> : null}
+        {busy ? <ActivityIndicator size="small" color={c.iconSoft} /> : null}
       </View>
       {hits.length > 0 ? (
-        <View className="overflow-hidden rounded-2xl border border-glass-line bg-white/85">
+        <View className="overflow-hidden rounded-2xl border border-glass-line bg-surface/85">
           {hits.map((h, i) => (
             <Pressable
               key={`${h.lat},${h.lng},${i}`}
@@ -111,7 +113,7 @@ export function MapPicker({ value, onChange }: MapPickerProps) {
                 setHits([]);
                 setQuery("");
               }}
-              className="border-b border-black/5 px-3 py-2.5"
+              className="border-b border-black/5 dark:border-white/10 px-3 py-2.5"
             >
               <Text numberOfLines={2} className="text-[12.5px] text-ink">{h.label}</Text>
             </Pressable>
@@ -120,7 +122,7 @@ export function MapPicker({ value, onChange }: MapPickerProps) {
       ) : null}
 
       <View className="overflow-hidden rounded-2xl border border-glass-line" style={{ height: 260 }}>
-        <div ref={el} style={{ width: "100%", height: "100%", zIndex: 0 }} />
+        <div ref={el} style={{ width: "100%", height: "100%", zIndex: 0, filter: dark ? "invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9)" : undefined }} />
         {/* fixed pin: its tip sits on the map centre */}
         <View pointerEvents="none" className="absolute inset-0 items-center justify-center" style={{ zIndex: 1000 }}>
           <View style={{ marginBottom: 34 }}>
@@ -130,10 +132,10 @@ export function MapPicker({ value, onChange }: MapPickerProps) {
         <Pressable
           accessibilityLabel={t("map.locate")}
           onPress={locate}
-          className="absolute left-2.5 top-2.5 h-10 w-10 items-center justify-center rounded-full bg-white shadow-md shadow-black/25"
+          className="absolute left-2.5 top-2.5 h-10 w-10 items-center justify-center rounded-full bg-surface shadow-md shadow-black/25"
           style={{ zIndex: 1001 }}
         >
-          <Icon name="pin" size={18} color="#14141f" />
+          <Icon name="pin" size={18} color="ink" />
         </Pressable>
       </View>
       <Text className="px-1 text-[12px] text-soft">{msg || t("map.hint")}</Text>

@@ -52,8 +52,32 @@
     dollar: "M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
     phone: "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z",
     alert: "M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01",
+    sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42",
+    moon: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",
     star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
   };
+  // ---- light / dark theme: explicit choice (saved) or the system setting; the CSS reads <html data-theme>
+  var darkMq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  var themePaint = null; // repaints the toggle button (it is rebuilt on every page change)
+  var themeListeners = [function () { if (themePaint) themePaint(); }];
+  function themePref() { try { var t = localStorage.getItem("admin_theme"); return t === "dark" || t === "light" ? t : ""; } catch (e) { return ""; } }
+  function isDark() { var t = themePref(); return t ? t === "dark" : !!(darkMq && darkMq.matches); }
+  function setTheme(t) {
+    try { localStorage.setItem("admin_theme", t); } catch (e) { /* storage unavailable */ }
+    document.documentElement.setAttribute("data-theme", t);
+    themeListeners.forEach(function (f) { f(); });
+  }
+  if (darkMq && darkMq.addEventListener) darkMq.addEventListener("change", function () { themeListeners.forEach(function (f) { f(); }); });
+  function themeBtn() {
+    var b = btn("", "ghost ic sm", null, null);
+    function paint() {
+      var dark = isDark(), label = dark ? "Switch to light mode" : "Switch to dark mode";
+      wipe(b); b.appendChild(icon(dark ? "sun" : "moon", 16)); b.title = label; b.setAttribute("aria-label", label);
+    }
+    b.onclick = function () { setTheme(isDark() ? "light" : "dark"); };
+    themePaint = paint; paint();
+    return b;
+  }
   function icon(name, size) {
     var s = document.createElementNS(NS, "svg");
     [["viewBox", "0 0 24 24"], ["width", size || 18], ["height", size || 18], ["fill", "none"], ["stroke", "currentColor"], ["stroke-width", 2], ["stroke-linecap", "round"], ["stroke-linejoin", "round"], ["aria-hidden", "true"]].forEach(function (a) { s.setAttribute(a[0], a[1]); });
@@ -145,8 +169,12 @@
         st.setProperty("--bot", ((sa.bottom || 0) + (ca.bottom || 0)) + "px");
       }
       tg.ready(); tg.expand();
-      if (ok("6.9")) { run(function () { tg.setHeaderColor("#f6ecfb"); }); run(function () { tg.setBackgroundColor("#ece8ff"); }); }
-      if (ok("7.10")) run(function () { tg.setBottomBarColor("#ffffff"); });
+      function tgColors() {
+        var d = isDark();
+        if (ok("6.9")) { run(function () { tg.setHeaderColor(d ? "#14142a" : "#f6ecfb"); }); run(function () { tg.setBackgroundColor(d ? "#0e0e18" : "#ece8ff"); }); }
+        if (ok("7.10")) run(function () { tg.setBottomBarColor(d ? "#1a1b2a" : "#ffffff"); });
+      }
+      tgColors(); themeListeners.push(tgColors);
       if (ok("7.7")) run(function () { tg.disableVerticalSwipes(); }); // scrolling must not close the app
       if (ok("8.0") && !tg.isFullscreen) run(function () { tg.requestFullscreen(); }); // phone and desktop; the layout follows the window width
       insets();
@@ -212,6 +240,7 @@
     top.appendChild(cr);
     top.appendChild(el("div", { class: "sp" }));
     if (refresh) top.appendChild(btn("Refresh", "ghost sm", "refresh", refresh));
+    top.appendChild(themeBtn());
     top.appendChild(btn("", "ghost ic sm mobonly", "logout", function () { signOut(); }, "Sign out"));
     badge();
     window.scrollTo(0, 0);
@@ -358,7 +387,7 @@
     g.appendChild(s("stop", { offset: "0", "stop-color": "#a78bfa" })); g.appendChild(s("stop", { offset: "1", "stop-color": "#7c6cf0" })); defs.appendChild(g); svg.appendChild(defs);
     for (var t = 0; t <= 4; t++) {
       var y = 20 + (190 * t) / 4;
-      svg.appendChild(s("line", { x1: 46, x2: 630, y1: y, y2: y, stroke: "#e5e7eb", "stroke-dasharray": t === 4 ? "" : "4 4" }));
+      svg.appendChild(s("line", { x1: 46, x2: 630, y1: y, y2: y, "class": "grid", "stroke-dasharray": t === 4 ? "" : "4 4" }));
       svg.appendChild(s("text", { x: 40, y: y + 4, "text-anchor": "end" }, "$" + Math.round(max * (1 - t / 4))));
     }
     days.forEach(function (x, idx) {
@@ -510,7 +539,7 @@
     ]);
     var mapLink = null;
     if (o.location && isFinite(o.location.lat) && isFinite(o.location.lng)) {
-      mapLink = el("a", { target: "_blank", rel: "noopener noreferrer", class: "row", style: "margin-top:8px;color:#4f46e5;font-weight:700;text-decoration:none", href: "https://www.openstreetmap.org/?mlat=" + Number(o.location.lat) + "&mlon=" + Number(o.location.lng) + "#map=17/" + Number(o.location.lat) + "/" + Number(o.location.lng) }, [icon("pin", 16), el("span", { text: "Open pin on the map" })]);
+      mapLink = el("a", { target: "_blank", rel: "noopener noreferrer", class: "row", style: "margin-top:8px;color:var(--link);font-weight:700;text-decoration:none", href: "https://www.openstreetmap.org/?mlat=" + Number(o.location.lat) + "&mlon=" + Number(o.location.lng) + "#map=17/" + Number(o.location.lat) + "/" + Number(o.location.lng) }, [icon("pin", 16), el("span", { text: "Open pin on the map" })]);
     }
     var tel = el("a", { class: "row", style: "color:inherit;text-decoration:none", href: "tel:" + String(o.customer.phone).replace(/[^0-9+]/g, "") }, [icon("phone", 15), el("span", { text: o.customer.phone })]);
     var cust = el("div", { class: "card" }, [

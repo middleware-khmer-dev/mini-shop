@@ -63,7 +63,7 @@ export function Gallery({ product }: { product: Product }) {
             accessibilityRole="button"
             accessibilityLabel={`${i + 1}`}
             onPress={() => go(i)}
-            className={`h-16 w-16 overflow-hidden rounded-xl bg-white p-1 ${i === index ? "border-2 border-[#14141f]" : "border border-black/10 opacity-80"}`}
+            className={`h-16 w-16 overflow-hidden rounded-xl bg-white p-1 ${i === index ? "border-2 border-primary" : "border border-black/10 dark:border-white/15 opacity-80"}`}
           >
             <Image source={{ uri }} resizeMode="contain" style={{ width: "100%", height: "100%" }} />
           </Pressable>

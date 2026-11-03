@@ -46,9 +46,9 @@ export function PillNav() {
               <Pressable
                 accessibilityRole="link"
                 accessibilityLabel={tr(t.label)}
-                className={`ml-2 flex-row items-center gap-2 rounded-full px-4 py-2.5 ${active ? "bg-glass-dark" : "hover:bg-white/60"}`}
+                className={`ml-2 flex-row items-center gap-2 rounded-full px-4 py-2.5 ${active ? "bg-glass-dark" : "hover:bg-surface/60"}`}
               >
-                <Icon name={t.icon} size={18} color={active ? "#fff" : "#6b7280"} />
+                <Icon name={t.icon} size={18} color={active ? "#fff" : "soft"} />
                 <Text className={`text-sm font-semibold ${active ? "text-white" : "text-soft"}`}>{tr(t.label)}</Text>
                 {t.key === "cart" ? badge(count) : null}
               </Pressable>
@@ -79,10 +79,10 @@ export function PillNav() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={tr(t.label)}
-                className={`h-[44px] flex-1 items-center justify-center rounded-full ${active ? "bg-[#14141f]/90" : ""}`}
+                className={`h-[44px] flex-1 items-center justify-center rounded-full ${active ? "bg-primary/90" : ""}`}
               >
                 <View>
-                  <Icon name={t.icon} size={20} color={active ? "#fff" : "#6b7280"} />
+                  <Icon name={t.icon} size={20} color={active ? "#fff" : "soft"} />
                   {t.key === "cart" && count > 0 ? (
                     <View className="absolute -right-2 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1">
                       <Text className="text-[9px] font-extrabold text-white">{count}</Text>

@@ -18,10 +18,10 @@ export default function Favorites() {
     <Screen title={t("fav.title")} contentClassName="gap-4 pt-2">
       {list.length === 0 ? (
         <View className="items-center gap-2 py-16">
-          <Icon name="heart" size={40} color="#9ca3af" />
+          <Icon name="heart" size={40} color="faint" />
           <Text className="font-bold text-ink">{t("fav.empty")}</Text>
           <Text className="text-center text-[12.5px] text-soft">{t("fav.emptySub")}</Text>
-          <Pressable onPress={() => router.replace("/catalog")} className="mt-3 rounded-2xl bg-[#14141f] px-5 py-3">
+          <Pressable onPress={() => router.replace("/catalog")} className="mt-3 rounded-2xl bg-primary px-5 py-3">
             <Text className="font-bold text-white">{t("fav.browse")}</Text>
           </Pressable>
         </View>

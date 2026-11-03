@@ -16,11 +16,11 @@ const formatDate = (iso: string) => {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 const chip: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-800",
-  confirmed: "bg-blue-100 text-blue-800",
-  shipped: "bg-violet-100 text-violet-800",
-  delivered: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-700",
+  pending: "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-200",
+  confirmed: "bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-200",
+  shipped: "bg-violet-100 dark:bg-violet-500/20 text-violet-800 dark:text-violet-200",
+  delivered: "bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-200",
+  cancelled: "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
 };
 
 /** Account → My orders: every order placed on this device, with its latest status from the server. */
@@ -47,17 +47,17 @@ export default function MyOrders() {
   return (
     <Screen title={t("orders.title")} contentClassName="gap-3 pt-2">
       {orders.length > 0 && ORDERS_API ? (
-        <Pressable onPress={refresh} className="self-end rounded-full border border-glass-line bg-white/60 px-3 py-1.5">
+        <Pressable onPress={refresh} className="self-end rounded-full border border-glass-line bg-surface/60 px-3 py-1.5">
           <Text className="text-[12px] font-semibold text-ink">{refreshing ? t("orders.refreshing") : t("orders.refresh")}</Text>
         </Pressable>
       ) : null}
 
       {orders.length === 0 ? (
         <View className="items-center gap-2 py-16">
-          <Icon name="cart" size={40} color="#9ca3af" />
+          <Icon name="cart" size={40} color="faint" />
           <Text className="font-bold text-ink">{t("orders.empty")}</Text>
           <Text className="text-center text-[12.5px] text-soft">{t("orders.emptySub")}</Text>
-          <Pressable onPress={() => router.replace("/catalog")} className="mt-3 rounded-2xl bg-[#14141f] px-5 py-3">
+          <Pressable onPress={() => router.replace("/catalog")} className="mt-3 rounded-2xl bg-primary px-5 py-3">
             <Text className="font-bold text-white">{t("fav.browse")}</Text>
           </Pressable>
         </View>
@@ -71,8 +71,8 @@ export default function MyOrders() {
                 <View className="flex-row items-center justify-between">
                   <Text className="text-[14px] font-extrabold text-ink">#{o.id}</Text>
                   {status ? (
-                    <View className={`rounded-full px-2.5 py-0.5 ${chip[status]?.split(" ")[0] ?? "bg-gray-100"}`}>
-                      <Text className={`text-[11.5px] font-bold ${chip[status]?.split(" ")[1] ?? "text-ink"}`}>{t(`order.s.${status}`, { fallback: status })}</Text>
+                    <View className={`rounded-full px-2.5 py-0.5 ${chip[status]?.split(" ").slice(0, 2).join(" ") ?? "bg-line/30"}`}>
+                      <Text className={`text-[11.5px] font-bold ${chip[status]?.split(" ").slice(2).join(" ") ?? "text-ink"}`}>{t(`order.s.${status}`, { fallback: status })}</Text>
                     </View>
                   ) : null}
                 </View>
